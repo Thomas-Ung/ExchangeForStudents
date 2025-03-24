@@ -1,0 +1,14 @@
+# .gitignore
+
+# Node
+node_modules/
+.expo/
+.expo-shared/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Firebase
+firebase/serviceAccountKey.json
