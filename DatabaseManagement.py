@@ -54,11 +54,11 @@ Sports gear: type, description, weight, price
 
 class PostManager:
     post_elements = {
-        "books" : ["category", "book title", "description", "edition", "course number", "price"],
-        "clothing" : ["category", "type", "description", "color", "size", "price"],
-        "furniture": ["category", "type", "description", "color", "dimension", "weight", "price"],
-        "electronics": ["category", "type", "description", "model", "dimension", "weight", "price"],
-        "sports gear": ["category", "type", "description", "weight", "price"]
+        "books" : ["category", "book title", "description", "edition", "course number", "price", "seller", "upload time"],
+        "clothing" : ["category", "type", "description", "color", "size", "price", "seller", "upload time"],
+        "furniture": ["category", "type", "description", "color", "dimension", "weight", "price", "seller", "upload time"],
+        "electronics": ["category", "type", "description", "model", "dimension", "weight", "price", "seller", "upload time"],
+        "sports gear": ["category", "type", "description", "weight", "price", "seller", "upload time"]
     }
 
     def __init__(self):
@@ -88,17 +88,12 @@ class PostManager:
     def get_keys(self, category : str):
         keys = self.post_elements.get(category)
         return keys
-        
-    #copied from account manager
-    """
-    #function to get the dictionary which corresponds to the inputted username
-    def get_account(self, username: str):
-        account = self.accounts.document(username)
-        #returns None if there isn't an account with that username
-        if not account.get().exists:
-            return None
-        return account.get().to_dict()
-    """
+    
+    def get_categories(self):
+        return self.post_elements.keys()
+
+    def get_posts_stream(self):
+        docs = db.collection(self.posts).stream()
     
 #code to test account manager
 
