@@ -50,6 +50,7 @@ Furniture: type, description, color, dimension, weight, price
 Electronics: type, description, model, dimension, weight, price
 Sports gear: type, description, weight, price
 """
+#add seller, upload time,
 
 class PostManager:
     post_elements = {
@@ -100,6 +101,7 @@ class PostManager:
     """
     
 #code to test account manager
+
 
 post_manager = PostManager()
 """
