@@ -1,5 +1,5 @@
 import React from 'react';
-import BrowseScreen from '../screens/BrowseScreen';
+import BrowseScreen from '../../screens/BrowseScreen';
 
 export default function Browse() {
   return <BrowseScreen />;

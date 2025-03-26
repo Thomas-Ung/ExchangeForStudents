@@ -12,4 +12,6 @@ venv/
 
 # Firebase
 firebase/serviceAccountKey.json
+frontend/firebase/firebaseConfig.js
+frontend/firebase/firebaseConfig.js
 exchange-for-students-firebase-adminsdk-fbsvc-55c7e57c50.json
