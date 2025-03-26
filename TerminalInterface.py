@@ -50,7 +50,18 @@ def core_loop():
             print("Invalid input, try again")
 
 def browse():
-    print("browse not implemented yet")
+    posts = post_manager.get_posts_stream()
+    titles = []
+    for post in posts:
+        post = post.to_dict()
+        if post["category"] == "books":
+            title = post["book title"]
+        else:
+            title = post["type"]
+        
+
+
+    print(len(list(posts)))
     
 def post():
     categories = list(post_manager.get_categories())
