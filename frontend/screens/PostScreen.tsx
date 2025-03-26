@@ -6,6 +6,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
+import { Picker } from '@react-native-picker/picker'; // 👈 Add this for dropdown
 
 // Firebase config
 const firebaseConfig = {
@@ -26,6 +27,8 @@ const auth = getAuth(app);
 export default function PostScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
+  const [condition, setCondition] = useState('Good');
+  const [price, setPrice] = useState('');
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -45,6 +48,11 @@ export default function PostScreen() {
       return;
     }
 
+    if (!price || isNaN(Number(price))) {
+      Alert.alert('Invalid price', 'Please enter a valid number.');
+      return;
+    }
+
     try {
       const response = await fetch(imageUri);
       const blob = await response.blob();
@@ -58,6 +66,8 @@ export default function PostScreen() {
 
       await addDoc(collection(db, 'Posts'), {
         caption,
+        condition,
+        price: parseFloat(price),
         imageUrl: downloadURL,
         createdAt: Timestamp.now(),
         userId: user?.uid || 'anonymous',
@@ -66,6 +76,8 @@ export default function PostScreen() {
       Alert.alert('Post uploaded!');
       setImageUri(null);
       setCaption('');
+      setCondition('Good');
+      setPrice('');
     } catch (err) {
       console.error(err);
       Alert.alert('Upload failed', err instanceof Error ? err.message : 'Unknown error');
@@ -77,12 +89,34 @@ export default function PostScreen() {
       <Text style={styles.title}>Create a Post</Text>
       <Button title="Pick an image" onPress={pickImage} />
       {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
+
       <TextInput
         style={styles.input}
         placeholder="Caption"
         value={caption}
         onChangeText={setCaption}
       />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Price ($)"
+        keyboardType="numeric"
+        value={price}
+        onChangeText={setPrice}
+      />
+
+      <Text style={styles.label}>Condition:</Text>
+      <View style={styles.pickerWrapper}>
+        <Picker
+          selectedValue={condition}
+          onValueChange={(itemValue) => setCondition(itemValue)}
+        >
+          <Picker.Item label="Good" value="Good" />
+          <Picker.Item label="Fair" value="Fair" />
+          <Picker.Item label="Bad" value="Bad" />
+        </Picker>
+      </View>
+
       <Button title="Upload Post" onPress={uploadPost} />
     </View>
   );
@@ -110,4 +144,16 @@ const styles = StyleSheet.create({
     height: 250,
     marginVertical: 15,
   },
+  label: {
+    marginTop: 10,
+    fontWeight: 'bold',
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    marginTop: 5,
+    marginBottom: 20,
+  },
 });
+
