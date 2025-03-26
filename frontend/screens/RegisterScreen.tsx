@@ -1,24 +1,9 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, Button, View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
-
-// Firebase configuration (replace with your Firebase config)
-const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_AUTH_DOMAIN',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID',
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig'; // Import Firebase services
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -28,20 +13,44 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     try {
-      // Create a new user with Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+        console.log("Register button clicked"); // Debugging: Check if the function is triggered
+        // Reference to the "users" collection and document with a custom ID
+        const userRef = doc(db, "Accounts", username);
+        // Fetch the document to check if it already exists
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+            // If the document exists, log a message and don't overwrite it
+            console.log("User with this ID already exists:", username);
+        } else {
+            // If the document does not exist, create a new one
+            const newUser = {
+                name: username,
+                password: password
+            };
+            try {
+                // Set the document data at the specified document ID
+                await setDoc(userRef, newUser);
+                console.log("User created with ID:", username);
+            } catch (e) {
+                console.error("Error creating user: ", e);  // Error handling
+            }
+        }
 
-      // Store user data in Firestore
-      const userDocRef = doc(db, 'Accounts', user.uid); // Use the user's UID as the document ID
-      await setDoc(userDocRef, {
-        email: email,
-        username: username,
-        createdAt: new Date().toISOString(),
-      });
+      // Create a new user with Firebase Authentication
+    //   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    //   const user = userCredential.user;
+
+    //   // Store user data in Firestore
+    //   const userDocRef = doc(db, 'Accounts', user.uid); // Use the user's UID as the document ID
+    //   await setDoc(userDocRef, {
+    //     email: email,
+    //     username: username,
+    //     createdAt: new Date().toISOString(),
+    //   });
+    
 
       Alert.alert('Registration Successful', `Welcome, ${username}!`);
-      router.push('./browse'); // Navigate to the Browse screen
+      router.push('/browse'); // Navigate to the Browse screen
     } catch (error) {
       Alert.alert('Registration Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
     }
@@ -56,15 +65,7 @@ export default function RegisterScreen() {
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+        />
       <TextInput
         style={styles.input}
         placeholder="Password"
