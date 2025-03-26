@@ -49,6 +49,7 @@ def core_loop():
         else:
             print("Invalid input, try again")
 
+#doesnt work
 def browse():
     posts = post_manager.get_posts_stream()
     titles = []
