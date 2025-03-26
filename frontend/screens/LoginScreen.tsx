@@ -34,8 +34,15 @@ export default function LoginScreen() {
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        console.log('User data:', userDoc.data());
-        Alert.alert('Login Successful', `Welcome, ${userDoc.data().username}!`);
+        const userData = userDoc.data();
+        console.log('User data:', userData);
+
+        // Check if the user data matches the expected format
+        if (userData.email === email) {
+          Alert.alert('Login Successful', `Welcome, ${userData.username}!`);
+        } else {
+          Alert.alert('Error', 'User data mismatch.');
+        }
       } else {
         console.log('No user data found!');
         Alert.alert('Error', 'No user data found in the database.');
