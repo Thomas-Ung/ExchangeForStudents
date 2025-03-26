@@ -21,3 +21,4 @@ doc_ref = db.collection('testCollection').document("cX752viEC8RiBqQBqWd4")
 #printing the id and content
 print('Document ID:', doc_ref.id)
 print('Document Contents:', doc_ref.id)
+

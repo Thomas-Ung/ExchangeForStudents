@@ -44,11 +44,11 @@ class AccountManager:
 
 #post types and data
 """
-Books: book title, description, edition, course number, price
-Clothing: type, description, color, size, price
-Furniture: type, description, color, dimension, weight, price
-Electronics: type, description, model, dimension, weight, price
-Sports gear: type, description, weight, price
+Books: book title, description, edition, course number, price, image url
+Clothing: type, description, color, size, price, image url
+Furniture: type, description, color, dimension, weight, price, image url
+Electronics: type, description, model, dimension, weight, price, image url
+Sports gear: type, description, weight, price, image url
 """
 #add seller, upload time,
 
