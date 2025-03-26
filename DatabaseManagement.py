@@ -93,7 +93,7 @@ class PostManager:
         return self.post_elements.keys()
 
     def get_posts_stream(self):
-        docs = db.collection(self.posts).stream()
+        return self.posts.stream()
     
 #code to test account manager
 
