@@ -1,55 +1,22 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, Button, View, Text, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
 
-// Firebase configuration (replace with your Firebase config)
-const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_AUTH_DOMAIN',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID',
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const auth = getAuth();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter(); // Use Expo Router's navigation
 
   const handleLogin = async () => {
     try {
-      // Authenticate user with Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Fetch user data from Firestore
-      const userDocRef = doc(db, 'Accounts', user.uid); // Assuming 'Accounts' collection stores user data
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log('User data:', userData);
-
-        // Check if the user data matches the expected format
-        if (userData.email === email) {
-          Alert.alert('Login Successful', `Welcome, ${userData.username}!`);
-        } else {
-          Alert.alert('Error', 'User data mismatch.');
-        }
-      } else {
-        console.log('No user data found!');
-        Alert.alert('Error', 'No user data found in the database.');
-      }
+      Alert.alert('Login Successful', `Welcome back!`);
+      router.push('./browse'); // Navigate to the Browse screen
     } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Login Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
+      Alert.alert('Login Failed', (error as Error).message);
     }
   };
 

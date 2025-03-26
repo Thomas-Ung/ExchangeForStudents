@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, Button, View, Text, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
@@ -23,6 +24,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const router = useRouter(); // Use Expo Router's navigation
 
   const handleRegister = async () => {
     try {
@@ -39,8 +41,8 @@ export default function RegisterScreen() {
       });
 
       Alert.alert('Registration Successful', `Welcome, ${username}!`);
+      router.push('./browse'); // Navigate to the Browse screen
     } catch (error) {
-      console.error('Registration error:', error);
       Alert.alert('Registration Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
     }
   };
