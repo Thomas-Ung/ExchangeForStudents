@@ -2,11 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
-import { Picker } from '@react-native-picker/picker'; // 👈 Add this for dropdown
-import { useRouter } from 'expo-router';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, storage } from '../firebaseConfig'; // Import Firebase services
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig';
 
 export default function PostScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -22,7 +19,31 @@ export default function PostScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
+      const selectedImageUri = result.assets[0].uri;
+      setImageUri(selectedImageUri);
+      console.log("Selected Image URI:", selectedImageUri); // Log the selected image URI
+    }
+  };
+
+  const uploadFile = async (localPath: string, storagePath: string): Promise<string> => {
+    console.log("Uploading file to Firebase Storage:", localPath, "->", storagePath);
+    try {
+      const response = await fetch(localPath); // Fetch the file from the local URI
+      const blob = await response.blob(); // Convert the file to a binary blob
+
+      const storage = getStorage(); // Initialize Firebase Storage
+      const fileRef = ref(storage, storagePath); // Create a reference to the file in Firebase Storage
+
+      // Upload the file to Firebase Storage
+      await uploadBytes(fileRef, blob);
+
+      // Get the download URL of the uploaded file
+      const downloadUrl = await getDownloadURL(fileRef);
+      console.log("File uploaded successfully:", downloadUrl);
+      return downloadUrl;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      throw error;
     }
   };
 
@@ -38,16 +59,15 @@ export default function PostScreen() {
     }
 
     try {
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+      const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1); // Extract the filename
+      const storagePath = `DemoPosts/${filename}`; // Define the storage path in Firebase Storage
 
-      const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1);
-      const imageRef = ref(storage, `images/${filename}`);
-      await uploadBytes(imageRef, blob);
+      // Upload the file and get the download URL
+      const downloadURL = await uploadFile(imageUri, storagePath);
 
-      const downloadURL = await getDownloadURL(imageRef);
       const user = auth.currentUser;
 
+      // Save the post details to Firestore
       await addDoc(collection(db, 'Posts'), {
         caption,
         condition,
@@ -57,7 +77,7 @@ export default function PostScreen() {
         userId: user?.uid || 'anonymous',
       });
 
-      Alert.alert('Post uploaded!');
+      Alert.alert('Post uploaded successfully!');
       setImageUri(null);
       setCaption('');
       setCondition('Good');
@@ -90,16 +110,12 @@ export default function PostScreen() {
       />
 
       <Text style={styles.label}>Condition:</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={condition}
-          onValueChange={(itemValue) => setCondition(itemValue)}
-        >
-          <Picker.Item label="Good" value="Good" />
-          <Picker.Item label="Fair" value="Fair" />
-          <Picker.Item label="Bad" value="Bad" />
-        </Picker>
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Condition (e.g., Good, Fair, Bad)"
+        value={condition}
+        onChangeText={setCondition}
+      />
 
       <Button title="Upload Post" onPress={uploadPost} />
     </View>
@@ -131,12 +147,5 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 10,
     fontWeight: 'bold',
-  },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    marginTop: 5,
-    marginBottom: 20,
   },
 });

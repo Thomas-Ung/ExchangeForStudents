@@ -2,7 +2,14 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// import * as admin from "firebase-admin";
+// import { getStorage } from "firebase-admin/storage";
+// Initialize Firebase Admin SDK
 
+// admin.initializeApp({
+//   credential: admin.credential.applicationDefault(),
+//   storageBucket: "exchange-for-students.firebasestorage.app",
+// });
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBZmQazUOyvkn7bJh8-fIwBtVIBG60jgMQ",
