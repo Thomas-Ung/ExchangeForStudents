@@ -1,6 +1,8 @@
-import React from 'react';
-import BrowseScreen from '../screens/BrowseScreen';
-
+import React from "react";
+import LoginScreen from "../screens/LoginScreen"; // Adjust the path if necessary
+import RegisterScreen from "../screens/RegisterScreen"; // Adjust the path if necessary
+import PostScreen from "../screens/PostScreen"; // Adjust the path if necessary 
 export default function Index() {
-  return <BrowseScreen />;
+  // return <LoginScreen />;
+  return <PostScreen />;
 }
