@@ -11,13 +11,8 @@ import {
 } from 'react-native';
 
 const products = [
-  require('../assets/images/couch.jpg'),
-  require('../assets/images/chair.jpg'),
-  require('../assets/images/coffee.jpg'),
-  require('../assets/images/book.png'),
-  require('../assets/images/printer.jpg'),
-  require('../assets/images/desk.jpg'),
-];
+  { id: '1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/exchange-for-students.firebasestorage.app/o/DemoPosts%2FvB4AAAYjUat9oKvHbbMJQ59Jm5%2BiVWnSsjOHei5WtYWMcJ4tru7OWTzfeKDUrPJXyIRHVS4AADwsfQNA7e9X88sx7eipCbOmqxzXNqbn6qJmBDqu79hWOCY6edJzocd%2BOq3VYh8YAGDQExhjfY95uri5uedjQEh4R2tzF4mMhXLeRCRnLGygawQAgH7gKwAAAEAC0NMJACBRCAAAAIlCAAAASBQCAABAohAAAAAShQAAAJAoBAAAgEQhAAAAJAoBAAAgUQgAAACJ%2BguZlRrVeh91WQAAAABJRU5ErkJggg%3D%3D?alt=media&token=ba5e0e82-f22f-494b-bc84-236dd0cc687d' },
+]
 
 const BrowseScreen = () => {
   return (
@@ -46,7 +41,7 @@ const BrowseScreen = () => {
         numColumns={2}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Image source={item} style={styles.image} />
+            <Image source={{ uri: item.imageUrl }} style={styles.image} />
           </View>
         )}
         contentContainerStyle={styles.grid}
