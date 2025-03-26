@@ -1,28 +1,12 @@
-// screens/PostScreen.tsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
 import { Picker } from '@react-native-picker/picker'; // 👈 Add this for dropdown
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_AUTH_DOMAIN',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID',
-};
-
-// Firebase setup
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
-const db = getFirestore(app);
-const auth = getAuth(app);
+import { useRouter } from 'expo-router';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db, storage } from '../firebaseConfig'; // Import Firebase services
 
 export default function PostScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -156,4 +140,3 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 });
-
