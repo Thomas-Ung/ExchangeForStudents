@@ -29,6 +29,7 @@ These features were not completed within the current project scope but will like
 - Feature 4 – Interested button for buyers to select when wanting an item so that other users can see this item may be on hold and could potentially be sold soon.
 - Feature 5 – Sold button for sellers to place a sold item into sold when they sell said item to a buyer.
 - Feature 6 – Comments section on posts for prospective buyers to ask sellers questions about the product before engaging in a conversation to buy it. 
+- Feature 7 - Posts subclasses are not implemented yet. So far we've only implemented basic standard details of price, description, and image.
 
 
 ### Mapping to Milestones
