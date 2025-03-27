@@ -1,48 +1,82 @@
-// screens/BrowseScreen.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   FlatList,
-  TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
-
-const products = [
-  { id: '1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/exchange-for-students.firebasestorage.app/o/DemoPosts%2FvB4AAAYjUat9oKvHbbMJQ59Jm5%2BiVWnSsjOHei5WtYWMcJ4tru7OWTzfeKDUrPJXyIRHVS4AADwsfQNA7e9X88sx7eipCbOmqxzXNqbn6qJmBDqu79hWOCY6edJzocd%2BOq3VYh8YAGDQExhjfY95uri5uedjQEh4R2tzF4mMhXLeRCRnLGygawQAgH7gKwAAAEAC0NMJACBRCAAAAIlCAAAASBQCAABAohAAAAAShQAAAJAoBAAAgEQhAAAAJAoBAAAgUQgAAACJ%2BguZlRrVeh91WQAAAABJRU5ErkJggg%3D%3D?alt=media&token=ba5e0e82-f22f-494b-bc84-236dd0cc687d' },
-]
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseConfig'; // Import Firestore configuration
+import { useRouter } from 'expo-router'; // Import useRouter for navigation
 
 const BrowseScreen = () => {
+  const [products, setProducts] = useState<{ id: string; imageUrl?: string; caption?: string; price?: number; condition?: string }[]>([]); // State to store products
+  const [loading, setLoading] = useState(true); // State to manage loading state
+  const router = useRouter(); // Initialize router for navigation
+
+  // Fetch products from Firestore
+  const fetchProducts = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'Posts')); // Fetch all documents from the 'Posts' collection
+      const fetchedProducts = querySnapshot.docs.map((doc) => ({
+        id: doc.id, // Use the document ID as the product ID
+        ...doc.data(), // Spread the document data (e.g., imageUrl, caption, etc.)
+      }));
+      setProducts(fetchedProducts); // Update the state with fetched products
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false); // Stop the loading spinner
+    }
+  };
+
+  // Fetch products when the component mounts
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Image
-          source={require('../assets/images/logo.png')}
-          style={styles.logo}
-        />
-        <TouchableOpacity>
-          <Image
-            source={require('../assets/images/menu.png')}
-            style={styles.menuIcon}
-          />
-        </TouchableOpacity>
+        <Text style={styles.title}>Browse Products</Text>
       </View>
-
-      {/* Title */}
-      <Text style={styles.title}>New arrivals</Text>
 
       {/* Grid */}
       <FlatList
         data={products}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: '/display',
+                params: {
+                  imageUrl: item.imageUrl,
+                  caption: item.caption,
+                  price: item.price,
+                  condition: item.condition,
+                },
+              })
+            }
+          >
             <Image source={{ uri: item.imageUrl }} style={styles.image} />
-          </View>
+            <Text style={styles.caption}>{item.caption || 'No Caption'}</Text>
+          </TouchableOpacity>
         )}
         contentContainerStyle={styles.grid}
       />
@@ -53,18 +87,14 @@ const BrowseScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 16,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
-  logo: { width: 120, height: 30, resizeMode: 'contain' },
-  menuIcon: { width: 24, height: 24 },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    paddingHorizontal: 16,
-    marginBottom: 12,
   },
   grid: {
     paddingHorizontal: 12,
@@ -87,6 +117,17 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 8,
     resizeMode: 'cover',
+  },
+  caption: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
