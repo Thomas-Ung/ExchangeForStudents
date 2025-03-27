@@ -12,33 +12,37 @@ export default function PostScreen() {
   const [price, setPrice] = useState('');
 
   const pickImage = async () => {
+    console.log("Opening image picker...");
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
+      base64: false,
     });
+
+    console.log("Picker result:", result);
 
     if (!result.canceled && result.assets.length > 0) {
       const selectedImageUri = result.assets[0].uri;
       setImageUri(selectedImageUri);
-      console.log("Selected Image URI:", selectedImageUri); // Log the selected image URI
+      console.log("Selected Image URI:", selectedImageUri);
+    } else {
+      console.log("Image picking canceled or no image selected.");
     }
   };
 
   const uploadFile = async (localPath: string, storagePath: string): Promise<string> => {
     console.log("Uploading file to Firebase Storage:", localPath, "->", storagePath);
     try {
-      const response = await fetch(localPath); // Fetch the file from the local URI
-      const blob = await response.blob(); // Convert the file to a binary blob
+      const response = await fetch(localPath);
+      const blob = await response.blob();
 
-      const storage = getStorage(); // Initialize Firebase Storage
-      const fileRef = ref(storage, storagePath); // Create a reference to the file in Firebase Storage
+      const storage = getStorage();
+      const fileRef = ref(storage, storagePath);
 
-      // Upload the file to Firebase Storage
       await uploadBytes(fileRef, blob);
-
-      // Get the download URL of the uploaded file
       const downloadUrl = await getDownloadURL(fileRef);
+
       console.log("File uploaded successfully:", downloadUrl);
       return downloadUrl;
     } catch (error) {
@@ -48,26 +52,40 @@ export default function PostScreen() {
   };
 
   const uploadPost = async () => {
+    console.log("Starting post upload...");
+
     if (!imageUri) {
       Alert.alert('No image selected');
+      console.warn("Upload aborted: No image selected.");
       return;
     }
 
     if (!price || isNaN(Number(price))) {
       Alert.alert('Invalid price', 'Please enter a valid number.');
+      console.warn("Upload aborted: Invalid price input.");
       return;
     }
 
     try {
-      const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1); // Extract the filename
-      const storagePath = `DemoPosts/${filename}`; // Define the storage path in Firebase Storage
+      const filename = `${Date.now()}-${imageUri.substring(imageUri.lastIndexOf('/') + 1)}`;
+      const storagePath = `DemoPosts/${filename}`;
 
-      // Upload the file and get the download URL
+      console.log("Generated filename and storage path:", filename, storagePath);
+
       const downloadURL = await uploadFile(imageUri, storagePath);
 
       const user = auth.currentUser;
 
-      // Save the post details to Firestore
+      console.log('Download URL:', downloadURL);
+      console.log('Post details being saved:', {
+        caption,
+        condition,
+        price: parseFloat(price),
+        imageUrl: downloadURL,
+        createdAt: Timestamp.now(),
+        userId: user?.uid || 'anonymous',
+      });
+
       await addDoc(collection(db, 'Posts'), {
         caption,
         condition,
@@ -77,13 +95,21 @@ export default function PostScreen() {
         userId: user?.uid || 'anonymous',
       });
 
+      console.log('Post uploaded successfully!');
+      console.log('Post details:', {
+        caption,
+        condition,
+        price,
+        imageUrl: downloadURL,
+      });
+
       Alert.alert('Post uploaded successfully!');
       setImageUri(null);
       setCaption('');
       setCondition('Good');
       setPrice('');
     } catch (err) {
-      console.error(err);
+      console.error('Error uploading post:', err);
       Alert.alert('Upload failed', err instanceof Error ? err.message : 'Unknown error');
     }
   };

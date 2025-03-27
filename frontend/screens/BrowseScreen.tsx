@@ -10,31 +10,32 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; // Import Firestore configuration
-import { useRouter } from 'expo-router'; // Import useRouter for navigation
+import { db } from '../firebaseConfig';
+import { useRouter } from 'expo-router';
 
 const BrowseScreen = () => {
-  const [products, setProducts] = useState<{ id: string; imageUrl?: string; caption?: string; price?: number; condition?: string }[]>([]); // State to store products
-  const [loading, setLoading] = useState(true); // State to manage loading state
-  const router = useRouter(); // Initialize router for navigation
+  const [products, setProducts] = useState<
+    { id: string; imageUrl?: string; caption?: string; price?: number; condition?: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  // Fetch products from Firestore
   const fetchProducts = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'Posts')); // Fetch all documents from the 'Posts' collection
+      const querySnapshot = await getDocs(collection(db, 'Posts'));
       const fetchedProducts = querySnapshot.docs.map((doc) => ({
-        id: doc.id, // Use the document ID as the product ID
-        ...doc.data(), // Spread the document data (e.g., imageUrl, caption, etc.)
+        id: doc.id,
+        ...doc.data(),
       }));
-      setProducts(fetchedProducts); // Update the state with fetched products
+      console.log('Fetched products:', fetchedProducts);
+      setProducts(fetchedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
-      setLoading(false); // Stop the loading spinner
+      setLoading(false);
     }
   };
 
-  // Fetch products when the component mounts
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -49,12 +50,10 @@ const BrowseScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Browse Products</Text>
       </View>
 
-      {/* Grid */}
       <FlatList
         data={products}
         keyExtractor={(item) => item.id}
@@ -62,19 +61,21 @@ const BrowseScreen = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
-            onPress={() =>
+            onPress={() => {
+              console.log('Navigating with item:', item);
               router.push({
                 pathname: '/display',
                 params: {
-                  imageUrl: item.imageUrl,
-                  caption: item.caption,
-                  price: item.price,
-                  condition: item.condition,
+                  id: item.id,
                 },
-              })
-            }
+              });
+            }}
           >
-            <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            {item.imageUrl ? (
+              <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            ) : (
+              <Text>No Image</Text>
+            )}
             <Text style={styles.caption}>{item.caption || 'No Caption'}</Text>
           </TouchableOpacity>
         )}
