@@ -1,25 +1,74 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router'; // Import useLocalSearchParams to retrieve route parameters
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, SafeAreaView, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 const DisplayScreen = () => {
-  const { imageUrl, caption, price, condition } = useLocalSearchParams(); // Retrieve post data from route parameters
+  const { id } = useLocalSearchParams();
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        if (typeof id === 'string') {
+          const docRef = doc(db, 'Posts', id);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setPost(docSnap.data());
+            console.log('Fetched post:', docSnap.data());
+          } else {
+            console.warn('No post found with that ID.');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching post:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (!post) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Post not found.</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Post Details</Text>
       </View>
 
-      {/* Post Details */}
       <View style={styles.card}>
-        {typeof imageUrl === 'string' && (
-          <Image source={{ uri: imageUrl }} style={styles.image} />
+        {post.imageUrl ? (
+          <Image
+            source={{ uri: post.imageUrl }}
+            style={styles.image}
+            onError={(error) =>
+              console.error('Image failed to load:', error.nativeEvent.error)
+            }
+          />
+        ) : (
+          <Text>No Image Available</Text>
         )}
-        <Text style={styles.caption}>{caption || 'No Caption'}</Text>
-        <Text style={styles.info}>Price: ${price || 'N/A'}</Text>
-        <Text style={styles.info}>Condition: {condition || 'N/A'}</Text>
+        <Text style={styles.caption}>{post.caption || 'No Caption'}</Text>
+        <Text style={styles.info}>Price: ${post.price || 'N/A'}</Text>
+        <Text style={styles.info}>Condition: {post.condition || 'N/A'}</Text>
       </View>
     </SafeAreaView>
   );
@@ -63,6 +112,11 @@ const styles = StyleSheet.create({
   info: {
     fontSize: 14,
     color: '#555',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
