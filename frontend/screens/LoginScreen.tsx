@@ -19,7 +19,7 @@ export default function LoginScreen({ onAuthSuccess }: { onAuthSuccess: () => vo
       if (userSnap.exists() && userSnap.data().password === password) {
         Alert.alert('Login Successful', `Welcome back, ${userSnap.data().name}!`);
         onAuthSuccess(); // Notify parent component of successful login
-        router.push('/tabs/browse');
+        router.push('/home/tabs/browse');
       } else {
         Alert.alert('Login Failed', 'Invalid email or password.');
       }
