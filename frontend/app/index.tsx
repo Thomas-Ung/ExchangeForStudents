@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -11,6 +11,13 @@ export default function Index() {
     setIsAuthenticated(true);
   };
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("Redirecting to /home/tabs/browse");
+      router.replace("/home/tabs/browse");
+    }
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) {
     // If the user is not authenticated, show login/register options
     return (
@@ -22,9 +29,8 @@ export default function Index() {
     );
   }
 
-  // If the user is authenticated, navigate to the main app (e.g., Tabs)
-  router.push("./tabs");
-  return null; // Prevent rendering anything while redirecting
+  // While redirecting, render nothing
+  return null;
 }
 
 const styles = StyleSheet.create({

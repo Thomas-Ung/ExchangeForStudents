@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useRouter } from 'expo-router';
 
-const BrowseScreen = () => {
+const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
     { id: string; imageUrl?: string; caption?: string; price?: number; condition?: string }[]
   >([]);
@@ -22,12 +22,19 @@ const BrowseScreen = () => {
 
   const fetchProducts = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'Posts'));
+      const baseQuery = collection(db, 'Posts');
+
+      // If a category is provided, filter by category
+      const productsQuery = category
+        ? query(baseQuery, where('category', '==', category))
+        : baseQuery;
+
+      const querySnapshot = await getDocs(productsQuery);
       const fetchedProducts = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      console.log('Fetched products:', fetchedProducts);
+      console.log(`Fetched products for category "${category || 'all'}":`, fetchedProducts);
       setProducts(fetchedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -38,7 +45,7 @@ const BrowseScreen = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [category]);
 
   if (loading) {
     return (
@@ -51,7 +58,9 @@ const BrowseScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Browse Products</Text>
+        <Text style={styles.title}>
+          {category ? `${category.charAt(0).toUpperCase() + category.slice(1)} Products` : 'Browse Products'}
+        </Text>
       </View>
 
       <FlatList
@@ -64,7 +73,7 @@ const BrowseScreen = () => {
             onPress={() => {
               console.log('Navigating with item:', item);
               router.push({
-                pathname: '/display',
+                pathname: '/home/display',
                 params: {
                   id: item.id,
                 },
