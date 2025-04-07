@@ -7,12 +7,12 @@ export class PostManager {
    * Fetch posts by category.
    * If no category is provided, fetch all posts.
    */
-  static async fetchPostsByCategory(category: string): Promise<Post[]> {
+  static async fetchPostsByCategory(category?: string): Promise<Post[]> {
     try {
       const postRef = collection(db, "Posts");
-      const postsQuery = category === "all"
-        ? postRef
-        : query(postRef, where("category", "==", category));
+      const postsQuery = category
+        ? query(postRef, where("category", "==", category))
+        : postRef; // Fetch all posts if no category is provided
       const querySnapshot = await getDocs(postsQuery);
 
       return querySnapshot.docs.map((doc) => {
