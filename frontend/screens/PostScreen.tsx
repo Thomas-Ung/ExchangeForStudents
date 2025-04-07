@@ -1,122 +1,154 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Image, Alert, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { auth, db } from '../firebaseConfig';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  Image,
+  Alert,
+  StyleSheet,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import * as ImagePicker from "expo-image-picker";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
+import { createPostObject } from "../domain/services/PostFactory";
 
 export default function PostScreen() {
+  const [category, setCategory] = useState<string | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [caption, setCaption] = useState('');
-  const [condition, setCondition] = useState('Good');
-  const [price, setPrice] = useState('');
+  const [caption, setCaption] = useState("");
+  const [condition, setCondition] = useState("Good");
+  const [price, setPrice] = useState("");
+  const [specificFields, setSpecificFields] = useState<Record<string, any>>({});
 
   const pickImage = async () => {
-    console.log("Opening image picker...");
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
-      base64: false,
     });
 
-    console.log("Picker result:", result);
-
     if (!result.canceled && result.assets.length > 0) {
-      const selectedImageUri = result.assets[0].uri;
-      setImageUri(selectedImageUri);
-      console.log("Selected Image URI:", selectedImageUri);
-    } else {
-      console.log("Image picking canceled or no image selected.");
+      setImageUri(result.assets[0].uri);
     }
   };
 
   const uploadFile = async (localPath: string, storagePath: string): Promise<string> => {
-    console.log("Uploading file to Firebase Storage:", localPath, "->", storagePath);
-    try {
-      const response = await fetch(localPath);
-      const blob = await response.blob();
-
-      const storage = getStorage();
-      const fileRef = ref(storage, storagePath);
-
-      await uploadBytes(fileRef, blob);
-      const downloadUrl = await getDownloadURL(fileRef);
-
-      console.log("File uploaded successfully:", downloadUrl);
-      return downloadUrl;
-    } catch (error) {
-      console.error("Upload failed:", error);
-      throw error;
-    }
+    const response = await fetch(localPath);
+    const blob = await response.blob();
+    const storage = getStorage();
+    const fileRef = ref(storage, storagePath);
+    await uploadBytes(fileRef, blob);
+    return await getDownloadURL(fileRef);
   };
 
   const uploadPost = async () => {
-    console.log("Starting post upload...");
+    if (!category) {
+      Alert.alert("Please select a category");
+      return;
+    }
 
     if (!imageUri) {
-      Alert.alert('No image selected');
-      console.warn("Upload aborted: No image selected.");
+      Alert.alert("No image selected");
       return;
     }
 
     if (!price || isNaN(Number(price))) {
-      Alert.alert('Invalid price', 'Please enter a valid number.');
-      console.warn("Upload aborted: Invalid price input.");
+      Alert.alert("Invalid price", "Please enter a valid number.");
       return;
     }
 
     try {
-      const filename = `${Date.now()}-${imageUri.substring(imageUri.lastIndexOf('/') + 1)}`;
-      const storagePath = `DemoPosts/${filename}`;
-
-      console.log("Generated filename and storage path:", filename, storagePath);
-
+      const filename = `${Date.now()}-${imageUri.substring(imageUri.lastIndexOf("/") + 1)}`;
+      const storagePath = `Posts/${filename}`;
       const downloadURL = await uploadFile(imageUri, storagePath);
 
       const user = auth.currentUser;
-
-      console.log('Download URL:', downloadURL);
-      console.log('Post details being saved:', {
-        caption,
-        condition,
+      const commonFields = {
+        id: "",
         price: parseFloat(price),
-        imageUrl: downloadURL,
-        createdAt: Timestamp.now(),
-        userId: user?.uid || 'anonymous',
+        quality: condition,
+        seller: user?.uid || "anonymous",
+        description: caption,
+        photo: downloadURL,
+        postTime: new Date(),
+      };
+
+      const postObject = createPostObject(category, commonFields, specificFields);
+
+      await addDoc(collection(db, "Posts"), {
+        ...postObject,
+        category,
       });
 
-      await addDoc(collection(db, 'Posts'), {
-        caption,
-        condition,
-        price: parseFloat(price),
-        imageUrl: downloadURL,
-        createdAt: Timestamp.now(),
-        userId: user?.uid || 'anonymous',
-      });
-
-      console.log('Post uploaded successfully!');
-      console.log('Post details:', {
-        caption,
-        condition,
-        price,
-        imageUrl: downloadURL,
-      });
-
-      Alert.alert('Post uploaded successfully!');
+      Alert.alert("Post uploaded successfully!");
       setImageUri(null);
-      setCaption('');
-      setCondition('Good');
-      setPrice('');
+      setCaption("");
+      setCondition("Good");
+      setPrice("");
+      setSpecificFields({});
+      setCategory(null);
     } catch (err) {
-      console.error('Error uploading post:', err);
-      Alert.alert('Upload failed', err instanceof Error ? err.message : 'Unknown error');
+      Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
+    }
+  };
+
+  const renderSpecificFields = () => {
+    switch (category) {
+      case "Book":
+        return (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Title"
+              value={specificFields.title || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, title: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Course Number"
+              value={specificFields.courseNumber || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, courseNumber: value })}
+            />
+          </>
+        );
+      case "Clothing":
+        return (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Color"
+              value={specificFields.color || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, color: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Size"
+              value={specificFields.size || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, size: value })}
+            />
+          </>
+        );
+      // Add cases for Furniture, Electronic, SportsGear
+      default:
+        return null;
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create a Post</Text>
+      <Picker selectedValue={category} onValueChange={(value) => setCategory(value)}>
+        <Picker.Item label="Select Category" value={null} />
+        <Picker.Item label="Book" value="Book" />
+        <Picker.Item label="Clothing" value="Clothing" />
+        <Picker.Item label="Furniture" value="Furniture" />
+        <Picker.Item label="Electronic" value="Electronic" />
+        <Picker.Item label="Sports Gear" value="SportsGear" />
+      </Picker>
+
       <Button title="Pick an image" onPress={pickImage} />
       {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
@@ -143,6 +175,8 @@ export default function PostScreen() {
         onChangeText={setCondition}
       />
 
+      {renderSpecificFields()}
+
       <Button title="Upload Post" onPress={uploadPost} />
     </View>
   );
@@ -152,7 +186,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 22,
@@ -161,17 +195,17 @@ const styles = StyleSheet.create({
   input: {
     marginTop: 10,
     padding: 8,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 4,
   },
   image: {
-    width: '100%',
+    width: "100%",
     height: 250,
     marginVertical: 15,
   },
   label: {
     marginTop: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
