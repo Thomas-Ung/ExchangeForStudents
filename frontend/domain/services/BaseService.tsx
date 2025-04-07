@@ -9,7 +9,7 @@ import {
     deleteDoc,
     Firestore
   } from "firebase/firestore";
-  import { db } from "../firebaseConfig";
+  import { db } from "../../firebaseConfig";
   
   export abstract class BaseService<T> {
     constructor(private collectionName: string) {}

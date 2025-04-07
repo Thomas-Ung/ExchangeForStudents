@@ -7,6 +7,7 @@ import {
   Image,
   Alert,
   StyleSheet,
+  ScrollView
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
@@ -66,21 +67,18 @@ export default function PostScreen() {
       const downloadURL = await uploadFile(imageUri, storagePath);
 
       const user = auth.currentUser;
-      const commonFields = {
-        id: "",
+      const postRef = collection(db, "Posts");
+
+      await addDoc(postRef, {
+        category,
         price: parseFloat(price),
         quality: condition,
         seller: user?.uid || "anonymous",
         description: caption,
         photo: downloadURL,
-        postTime: new Date(),
-      };
-
-      const postObject = createPostObject(category, commonFields, specificFields);
-
-      await addDoc(collection(db, "Posts"), {
-        ...postObject,
-        category,
+        postTime: Timestamp.now(),
+        requesters: [], // Initialize with an empty array
+        ...specificFields, // Include category-specific fields
       });
 
       Alert.alert("Post uploaded successfully!");
@@ -88,8 +86,8 @@ export default function PostScreen() {
       setCaption("");
       setCondition("Good");
       setPrice("");
-      setSpecificFields({});
       setCategory(null);
+      setSpecificFields({});
     } catch (err) {
       Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
     }
@@ -131,13 +129,79 @@ export default function PostScreen() {
             />
           </>
         );
-      // Add cases for Furniture, Electronic, SportsGear
+      case "Furniture":
+        return (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Color"
+              value={specificFields.color || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, color: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Dimensions"
+              value={specificFields.dimensions || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, dimensions: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Weight"
+              keyboardType="numeric"
+              value={specificFields.weight || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, weight: value })}
+            />
+          </>
+        );
+      case "Electronic":
+        return (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Model"
+              value={specificFields.model || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, model: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Dimensions"
+              value={specificFields.dimensions || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, dimensions: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Weight"
+              keyboardType="numeric"
+              value={specificFields.weight || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, weight: value })}
+            />
+          </>
+        );
+      case "SportsGear":
+        return (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Type"
+              value={specificFields.type || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, type: value })}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Weight"
+              keyboardType="numeric"
+              value={specificFields.weight || ""}
+              onChangeText={(value) => setSpecificFields({ ...specificFields, weight: value })}
+            />
+          </>
+        );
       default:
         return null;
     }
   };
 
   return (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
     <View style={styles.container}>
       <Text style={styles.title}>Create a Post</Text>
       <Picker selectedValue={category} onValueChange={(value) => setCategory(value)}>
@@ -179,6 +243,7 @@ export default function PostScreen() {
 
       <Button title="Upload Post" onPress={uploadPost} />
     </View>
+    </ScrollView>
   );
 }
 
