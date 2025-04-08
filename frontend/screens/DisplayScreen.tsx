@@ -55,9 +55,9 @@ const DisplayScreen = () => {
       </View>
 
       <View style={styles.card}>
-        {post.imageUrl ? (
+        {post.photo ? (
           <Image
-            source={{ uri: post.imageUrl }}
+            source={{ uri: post.photo }}
             style={styles.image}
             onError={(error) =>
               console.error('Image failed to load:', error.nativeEvent.error)
@@ -66,9 +66,35 @@ const DisplayScreen = () => {
         ) : (
           <Text>No Image Available</Text>
         )}
-        <Text style={styles.caption}>{post.caption || 'No Caption'}</Text>
+        <Text style={styles.caption}>{post.description || 'No Description'}</Text>
         <Text style={styles.info}>Price: ${post.price || 'N/A'}</Text>
         <Text style={styles.info}>Condition: {post.condition || 'N/A'}</Text>
+        <Text style={styles.info}>Category: {post.category || 'N/A'}</Text>
+
+        {/* Dynamically render additional attributes */}
+        {Object.keys(post).map((key) => {
+          if (!['id', 'photo', 'description', 'price', 'condition', 'category'].includes(key)) {
+            const value = post[key];
+
+            // Check if the value is a Firestore Timestamp
+            if (value && value.seconds && value.nanoseconds) {
+              const date = new Date(value.seconds * 1000); // Convert seconds to milliseconds
+              return (
+                <Text key={key} style={styles.info}>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}: {date.toLocaleString()}
+                </Text>
+              );
+            }
+
+            // Render other values as strings
+            return (
+              <Text key={key} style={styles.info}>
+                {key.charAt(0).toUpperCase() + key.slice(1)}: {value}
+              </Text>
+            );
+          }
+          return null;
+        })}
       </View>
     </SafeAreaView>
   );

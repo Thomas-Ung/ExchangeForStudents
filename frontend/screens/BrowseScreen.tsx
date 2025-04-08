@@ -9,24 +9,20 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
 import { useRouter } from 'expo-router';
+import { PostManager } from '../domain/managers/PostManager';
 
-const BrowseScreen = () => {
+const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
-    { id: string; imageUrl?: string; caption?: string; price?: number; condition?: string }[]
+    { id: string; photo?: string; description?: string; category?: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const fetchProducts = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'Posts'));
-      const fetchedProducts = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      setLoading(true);
+      const fetchedProducts = await PostManager.fetchPostsByCategory(category);
       console.log('Fetched products:', fetchedProducts);
       setProducts(fetchedProducts);
     } catch (error) {
@@ -38,7 +34,7 @@ const BrowseScreen = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [category]);
 
   if (loading) {
     return (
@@ -51,7 +47,7 @@ const BrowseScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Browse Products</Text>
+        <Text style={styles.title}>{category ? `${category} Products` : 'All Products'}</Text>
       </View>
 
       <FlatList
@@ -62,21 +58,20 @@ const BrowseScreen = () => {
           <TouchableOpacity
             style={styles.card}
             onPress={() => {
-              console.log('Navigating with item:', item);
               router.push({
-                pathname: '/display',
+                pathname: '/home/display',
                 params: {
-                  id: item.id,
+                  id: item.id, // Pass the post ID to the DisplayScreen
                 },
               });
             }}
           >
-            {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            {item.photo ? (
+              <Image source={{ uri: item.photo }} style={styles.image} />
             ) : (
               <Text>No Image</Text>
             )}
-            <Text style={styles.caption}>{item.caption || 'No Caption'}</Text>
+            <Text style={styles.caption}>{item.description || 'No Description'}</Text>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.grid}
