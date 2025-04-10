@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-/* Will replace with real posts - hardcoded for now */
+/* Mock posts for testing */
 const mockPosts = [
   {
     id: '1',

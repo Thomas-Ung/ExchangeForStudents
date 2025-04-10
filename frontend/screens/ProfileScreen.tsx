@@ -56,7 +56,7 @@ const ProfileScreen = () => {
 
       <TouchableOpacity
         style={styles.viewPostsButton}
-        onPress={() => router.push('/home/ViewPosts')} 
+        onPress={() => router.push('/hidden/ViewPosts')} 
       >
         <Text style={styles.viewPostsButtonText}>View My Posts</Text>
       </TouchableOpacity>

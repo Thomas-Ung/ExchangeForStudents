@@ -10,8 +10,32 @@ import {
   ScrollView,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { Alert } from 'react-native';
+import { db, auth } from '../firebaseConfig'; // Import Firebase services
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore"; // Add this import
+
+// Add this function to handle "I'm Interested" clicks
+const handleInterestedClick = async (postId: string) => {
+  try {
+    const user = auth.currentUser;
+
+    if (!user) {
+      Alert.alert("You need to be logged in to express interest.");
+      return;
+    }
+
+    const userName = user.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
+    const postRef = doc(db, "Posts", postId); // Reference the specific post document
+
+    await updateDoc(postRef, {
+      requesters: arrayUnion(userName), // Add the user's name to the requesters array
+    });
+
+    Alert.alert("Your interest has been recorded!");
+  } catch (err) {
+    Alert.alert("Failed to express interest", err instanceof Error ? err.message : "Unknown error");
+  }
+};
 
 const DisplayScreen = () => {
   const { id } = useLocalSearchParams();
@@ -22,11 +46,11 @@ const DisplayScreen = () => {
     const fetchPost = async () => {
       try {
         if (typeof id === 'string') {
-          const docRef = doc(db, 'Posts', id);
-          const docSnap = await getDoc(docRef);
+          const docRef = doc(db, 'Posts', id); // Reference the document by ID
+          const docSnap = await getDoc(docRef); // Fetch the document
           if (docSnap.exists()) {
-            setPost(docSnap.data());
-            console.log('Fetched post:', docSnap.data());
+            setPost({ id: docRef.id, ...docSnap.data() }); // Explicitly set the ID
+            console.log('Fetched post:', { id: docRef.id, ...docSnap.data() });
           } else {
             console.warn('No post found with that ID.');
           }
@@ -111,7 +135,16 @@ const DisplayScreen = () => {
           {/* "I'm Interested" Button */}
           <TouchableOpacity
             style={styles.interestButton}
-            onPress={() => alert("You've been added to the queue!")}>
+            onPress={() => {
+              const user = auth.currentUser;
+              const userName = user?.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
+
+              alert("You've been added to the queue!");
+              handleInterestedClick(post.id);
+              console.log('Current user:', auth.currentUser);
+              console.log(`${userName} expressed interest in post with ID: ${post.id}`);
+            }}
+          >
             <Text style={styles.buttonText}>I'm Interested</Text>
           </TouchableOpacity>
         </View>

@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { db, auth } from '../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth'; // Import the listener
 import { PostManager } from '../domain/managers/PostManager';
 
 const BrowseScreen = ({ category }: { category?: string }) => {
@@ -17,7 +19,28 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     { id: string; photo?: string; description?: string; category?: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null); // Track the authenticated user
   const router = useRouter();
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('Authenticated user:', {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'Anonymous',
+        });
+        setCurrentUser(user); // Set the authenticated user
+      } else {
+        console.log('No user is currently authenticated.');
+        setCurrentUser(null); // Clear the user state
+      }
+    });
+
+    // Cleanup the listener on unmount
+    return () => unsubscribe();
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -48,6 +71,11 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{category ? `${category} Products` : 'All Products'}</Text>
+        {currentUser && (
+          <Text style={styles.userInfo}>
+            Logged in as: {currentUser.displayName || currentUser.email || 'Anonymous'}
+          </Text>
+        )}
       </View>
 
       <FlatList
@@ -59,11 +87,12 @@ const BrowseScreen = ({ category }: { category?: string }) => {
             style={styles.card}
             onPress={() => {
               router.push({
-                pathname: '/home/display',
+                pathname: '/hidden/display',
                 params: {
                   id: item.id, // Pass the post ID to the DisplayScreen
                 },
               });
+              console.log('Navigating to DisplayScreen with ID:', item.id);
             }}
           >
             {item.photo ? (
@@ -91,6 +120,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
+  },
+  userInfo: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#555',
   },
   grid: {
     paddingHorizontal: 12,
