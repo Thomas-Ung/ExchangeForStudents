@@ -1,30 +1,52 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, Button, View, Text, Alert, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebaseConfig'; // Import Firebase services
-import {doc, getDoc, collection, getDocs} from 'firebase/firestore';
-import {db} from '../firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
-export default function LoginScreen({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+interface LoginScreenProps {
+  onAuthSuccess?: () => void; // Optional callback for successful authentication
+}
+
+export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter();
 
   const handleLogin = async () => {
     try {
-      const userRef = doc(db, "Accounts", email);
+      // Authenticate the user with Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log('User authenticated:', user);
+
+      // Fetch additional user details from Firestore
+      const userRef = doc(db, 'Accounts', user.uid); // Use UID as the document ID
       const userSnap = await getDoc(userRef);
-      console.log(userSnap.data());
-      if (userSnap.exists() && userSnap.data().password === password) {
-        Alert.alert('Login Successful', `Welcome back, ${userSnap.data().name}!`);
-        onAuthSuccess(); // Notify parent component of successful login
-        router.push('/home/tabs/browse');
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        console.log('User data from Firestore:', userData);
+
+        // Optionally update the displayName in Firebase Authentication
+        if (userData.name) {
+          await updateProfile(user, { displayName: userData.name });
+          console.log('Display name updated to:', userData.name);
+        }
+
+        Alert.alert('Login Successful', `Welcome back, ${userData.name || 'User'}!`);
+
+        // Trigger the onAuthSuccess callback if provided
+        if (onAuthSuccess) {
+          onAuthSuccess();
+        }
       } else {
-        Alert.alert('Login Failed', 'Invalid email or password.');
+        console.error('No user data found in Firestore.');
+        Alert.alert('Login Failed', 'No user data found. Please contact support.');
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error('Login error:', error);
       Alert.alert('Login Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
     }
   };
@@ -48,7 +70,7 @@ export default function LoginScreen({ onAuthSuccess }: { onAuthSuccess: () => vo
         secureTextEntry
       />
       <Button title="Login" onPress={handleLogin} />
-      <TouchableOpacity onPress={() => router.push('/register')}>
+      <TouchableOpacity onPress={() => onAuthSuccess && onAuthSuccess()}>
         <Text style={styles.loginText}>Don't Have an Account? Register here </Text>
       </TouchableOpacity>
     </View>
