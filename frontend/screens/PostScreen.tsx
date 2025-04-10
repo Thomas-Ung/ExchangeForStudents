@@ -12,7 +12,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, Timestamp, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import { createPostObject } from "../domain/services/PostFactory";
 
@@ -67,13 +67,22 @@ export default function PostScreen() {
       const downloadURL = await uploadFile(imageUri, storagePath);
 
       const user = auth.currentUser;
+
+      if (!user) {
+        Alert.alert("Error", "You must be logged in to upload a post.");
+        return;
+      }
+
+      const displayName = user.displayName || "Anonymous";
+
       const postRef = collection(db, "Posts");
 
-      await addDoc(postRef, {
+      // Add the post to the "Posts" collection
+      const postDoc = await addDoc(postRef, {
         category,
         price: parseFloat(price),
         quality: condition,
-        seller: user?.uid || "anonymous",
+        seller: displayName, // Use the user's display name
         description: caption,
         photo: downloadURL,
         postTime: Timestamp.now(),
@@ -81,6 +90,27 @@ export default function PostScreen() {
         ...specificFields, // Include category-specific fields
       });
 
+      // Get the post ID
+      const postId = postDoc.id;
+
+      // Reference to the user's document
+      const userRef = doc(db, "Accounts", user.uid);
+
+      // Check if the user's document exists
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        console.error("User document does not exist. Ensure it is created during registration.");
+        Alert.alert("Error", "User document does not exist. Please contact support.");
+        return;
+      }
+
+      // Update the user's document to include the post ID in the "posts" array
+      await updateDoc(userRef, {
+        posts: arrayUnion(postId), // Add the post ID to the "posts" array
+      });
+
+      // Clear the fields after a successful upload
       Alert.alert("Post uploaded successfully!");
       setImageUri(null);
       setCaption("");
@@ -89,6 +119,7 @@ export default function PostScreen() {
       setCategory(null);
       setSpecificFields({});
     } catch (err) {
+      console.error("Error uploading post:", err);
       Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
     }
   };
