@@ -48,11 +48,11 @@ const AccountScreen = () => {
   };
 
   const handleEditPost = (postId: string) => {
-    router.push(`/editPost/${postId}`); // assuming you have an editPost screen
+    router.push(`/editPost/${postId}`); 
   };
 
   const handleViewQueue = (postId: string) => {
-    router.push(`/viewQueue/${postId}`); // assuming you have a viewQueue screen
+    router.push(`/viewQueue/${postId}`); 
   };
 
   if (loading) {
