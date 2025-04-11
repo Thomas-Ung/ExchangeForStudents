@@ -32,6 +32,7 @@ export default function RegisterScreen({ onAuthSuccess }: RegisterScreenProps) {
         email: email,
         createdAt: new Date(),
         posts: [], // Initialize with an empty array for posts
+        interested: [], // Initialize with an empty array for interested posts
       });
 
       console.log('User data saved to Firestore.');

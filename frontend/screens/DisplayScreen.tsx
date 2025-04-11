@@ -26,10 +26,13 @@ const handleInterestedClick = async (postId: string) => {
 
     const userName = user.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
     const postRef = doc(db, "Posts", postId); // Reference the specific post document
-
+    const userRef = doc(db, "Accounts", user.uid); // Reference the user's document in the Accounts collection
     await updateDoc(postRef, {
       requesters: arrayUnion(userName), // Add the user's name to the requesters array
     });
+    await updateDoc(userRef, {
+      interested: arrayUnion(postId), // Add the post ID to the interested array
+    })
 
     Alert.alert("Your interest has been recorded!");
   } catch (err) {
