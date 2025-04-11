@@ -122,7 +122,6 @@ const ViewPosts = () => {
       >
         <Picker.Item label="Available" value="available" />
         <Picker.Item label="On Hold" value="on hold" />
-        <Picker.Item label="Sold" value="sold" />
       </Picker>
       <TouchableOpacity
         style={styles.viewBuyersButton}
