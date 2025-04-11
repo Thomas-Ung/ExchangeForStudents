@@ -87,6 +87,7 @@ export default function PostScreen() {
         photo: downloadURL,
         postTime: Timestamp.now(),
         requesters: [], // Initialize with an empty array
+        status: "available", // Add the "status" field with a default value of "available"
         ...specificFields, // Include category-specific fields
       });
 
