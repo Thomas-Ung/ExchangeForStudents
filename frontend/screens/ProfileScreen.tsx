@@ -56,9 +56,16 @@ const ProfileScreen = () => {
 
       <TouchableOpacity
         style={styles.viewPostsButton}
-        onPress={() => router.push('/hidden/ViewPosts')} 
+        onPress={() => router.push('/hidden/ViewPosts')}
       >
         <Text style={styles.viewPostsButtonText}>View My Posts</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.viewPostsButton}
+        onPress={() => router.push('/hidden/InterestsPosts')} // Update the route as needed
+      >
+        <Text style={styles.viewPostsButtonText}>View Posts I'm Interested In</Text>
       </TouchableOpacity>
     </View>
   );
