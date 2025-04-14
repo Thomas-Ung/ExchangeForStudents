@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
@@ -9,40 +9,44 @@ const ViewQueueScreen = () => {
   const [requesters, setRequesters] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchRequesters = async () => {
-      if (!postId) {
-        console.error('No postId provided');
+  const fetchRequesters = useCallback(async () => {
+    if (!postId) {
+      console.error('No postId provided');
+      return;
+    }
+
+    try {
+      setLoading(true); // Show loading indicator while fetching data
+      console.log('Fetching requesters for postId:', postId);
+
+      // Fetch the post document from Firestore
+      const postRef = doc(db, 'Posts', Array.isArray(postId) ? postId[0] : postId);
+      const postSnap = await getDoc(postRef);
+
+      if (!postSnap.exists()) {
+        console.error('Post does not exist');
+        setRequesters([]);
+        setLoading(false);
         return;
       }
 
-      try {
-        console.log('Fetching requesters for postId:', postId);
+      const postData = postSnap.data();
+      console.log('Post data:', postData);
 
-        // Fetch the post document from Firestore
-        const postRef = doc(db, 'Posts', Array.isArray(postId) ? postId[0] : postId);
-        const postSnap = await getDoc(postRef);
-
-        if (!postSnap.exists()) {
-          console.error('Post does not exist');
-          return;
-        }
-
-        const postData = postSnap.data();
-        console.log('Post data:', postData);
-
-        // Extract the requesters field
-        const requestersList = postData?.requesters || [];
-        setRequesters(requestersList);
-      } catch (error) {
-        console.error('Error fetching requesters:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRequesters();
+      // Extract the requesters field
+      const requestersList = postData?.requesters || [];
+      setRequesters(requestersList);
+    } catch (error) {
+      console.error('Error fetching requesters:', error);
+      Alert.alert('Error', 'Failed to fetch requesters. Please try again later.');
+    } finally {
+      setLoading(false); // Stop loading in all cases
+    }
   }, [postId]);
+
+  useEffect(() => {
+    fetchRequesters(); // Fetch requesters on component mount
+  }, [fetchRequesters]);
 
   const handleAccept = async (buyer: string) => {
     try {
@@ -54,6 +58,8 @@ const ViewQueueScreen = () => {
       });
 
       console.log('Accepted', `${buyer}'s request has been accepted. The post is now marked as sold.`);
+      Alert.alert('Accepted', `${buyer}'s request has been accepted.`);
+      fetchRequesters(); // Refresh the list after accepting
     } catch (error) {
       console.error('Error accepting request:', error);
       Alert.alert('Error', 'Failed to accept the request.');
@@ -69,10 +75,9 @@ const ViewQueueScreen = () => {
         requesters: arrayRemove(buyer),
       });
 
-      // Update the local state to reflect the change
-      setRequesters((prevRequesters) => prevRequesters.filter((requester) => requester !== buyer));
-
+      console.log('Denied', `${buyer}'s request has been denied.`);
       Alert.alert('Denied', `${buyer}'s request has been denied.`);
+      fetchRequesters(); // Refresh the list after denying
     } catch (error) {
       console.error('Error denying request:', error);
       Alert.alert('Error', 'Failed to deny the request.');
@@ -90,6 +95,9 @@ const ViewQueueScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Interested Buyers</Text>
+      <TouchableOpacity style={styles.refreshButton} onPress={fetchRequesters}>
+        <Text style={styles.refreshButtonText}>Refresh</Text>
+      </TouchableOpacity>
       {requesters.length === 0 ? (
         <Text>No interested buyers for this post.</Text>
       ) : (
@@ -168,6 +176,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+  refreshButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

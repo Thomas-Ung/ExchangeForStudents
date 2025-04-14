@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  Alert,
   Image,
   TouchableOpacity,
 } from 'react-native';
@@ -14,36 +13,35 @@ import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firesto
 const InterestedPosts = () => {
   const [posts, setPosts] = useState<{ id: string; title?: string; status?: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const previousStatusesRef = useRef<{ [key: string]: string }>({}); // useRef instead of useState
 
   const fetchInterestedPosts = useCallback(async () => {
     try {
-      setLoading(true); // Show loading indicator while fetching data
+      setLoading(true);
       const user = auth.currentUser;
 
       if (!user) {
-        Alert.alert('Error', 'You must be logged in to view your interested posts.');
+        alert('Error: You must be logged in to view your interested posts.');
         console.log('No user is logged in.');
-        setLoading(false); // Stop loading if no user is logged in
+        setLoading(false);
         return;
       }
 
       console.log('Fetching interested posts for user:', user.uid);
 
-      // Reference to the user's document in the Accounts collection
       const userRef = doc(db, 'Accounts', user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        Alert.alert('Error', 'User document does not exist.');
+        alert('Error: User document does not exist.');
         console.log('User document does not exist in the Accounts collection.');
         setPosts([]);
         setLoading(false);
         return;
       }
 
-      // Get the interested array from the user's document
       const userData = userSnap.data();
-      const postIds = userData.interested || []; // Fetch the interested field
+      const postIds = userData.interested || [];
       console.log('Post IDs from interested field:', postIds);
 
       if (postIds.length === 0) {
@@ -53,7 +51,6 @@ const InterestedPosts = () => {
         return;
       }
 
-      // Split the postIds array into chunks of 10 (Firestore limitation)
       const chunkedPostIds = [];
       for (let i = 0; i < postIds.length; i += 10) {
         chunkedPostIds.push(postIds.slice(i, i + 10));
@@ -61,7 +58,6 @@ const InterestedPosts = () => {
 
       const fetchedPosts: any[] = [];
 
-      // Fetch posts for each chunk of post IDs
       for (const chunk of chunkedPostIds) {
         const postsRef = collection(db, 'Posts');
         const q = query(postsRef, where('__name__', 'in', chunk));
@@ -77,18 +73,39 @@ const InterestedPosts = () => {
 
       console.log('Fetched posts:', fetchedPosts);
 
-      // Update the posts
+      const newStatuses: { [key: string]: string } = {};
+      const currentUser = auth.currentUser?.displayName || 'You';
+
+      fetchedPosts.forEach((post) => {
+        const previousStatus = previousStatusesRef.current[post.id];
+
+        if (previousStatus && previousStatus !== post.status) {
+          alert(
+            `The status of the post "${post.description || 'Untitled Post'}" has changed to: ${post.status}`
+          );
+        }
+
+        if (post.status === `Sold to: ${currentUser}`) {
+          alert(
+            `The post "${post.description || 'Untitled Post'}" has been sold to you!`
+          );
+        }
+
+        newStatuses[post.id] = post.status || 'Unknown';
+      });
+
+      previousStatusesRef.current = newStatuses; // update ref only
       setPosts(fetchedPosts);
     } catch (error) {
       console.error('Error fetching interested posts:', error);
-      Alert.alert('Error', 'Failed to fetch interested posts. Please try again later.');
+      alert('Error: Failed to fetch interested posts. Please try again later.');
     } finally {
-      setLoading(false); // Ensure loading is stopped in all cases
+      setLoading(false);
     }
-  }, []);
+  }, []); // empty dependency list
 
   useEffect(() => {
-    fetchInterestedPosts(); // Fetch posts on component mount
+    fetchInterestedPosts();
   }, [fetchInterestedPosts]);
 
   const renderPost = ({ item }: any) => (
