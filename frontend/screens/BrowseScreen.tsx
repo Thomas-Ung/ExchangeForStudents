@@ -8,21 +8,23 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db, auth } from '../firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth'; // Import the listener
+import { onAuthStateChanged } from 'firebase/auth';
 import { PostManager } from '../domain/managers/PostManager';
 
 const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
     { id: string; photo?: string; description?: string; category?: string }[]
   >([]);
+  const [filteredProducts, setFilteredProducts] = useState<typeof products>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null); // Track the authenticated user
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -31,14 +33,12 @@ const BrowseScreen = ({ category }: { category?: string }) => {
           email: user.email,
           displayName: user.displayName || 'Anonymous',
         });
-        setCurrentUser(user); // Set the authenticated user
+        setCurrentUser(user);
       } else {
         console.log('No user is currently authenticated.');
-        setCurrentUser(null); // Clear the user state
+        setCurrentUser(null);
       }
     });
-
-    // Cleanup the listener on unmount
     return () => unsubscribe();
   }, []);
 
@@ -48,6 +48,7 @@ const BrowseScreen = ({ category }: { category?: string }) => {
       const fetchedProducts = await PostManager.fetchPostsByCategory(category);
       console.log('Fetched products:', fetchedProducts);
       setProducts(fetchedProducts);
+      setFilteredProducts(fetchedProducts); // Set initially
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -58,6 +59,14 @@ const BrowseScreen = ({ category }: { category?: string }) => {
   useEffect(() => {
     fetchProducts();
   }, [category]);
+
+  useEffect(() => {
+    const query = searchQuery.toLowerCase();
+    const filtered = products.filter((product) =>
+      product.description?.toLowerCase().includes(query)
+    );
+    setFilteredProducts(filtered);
+  }, [searchQuery, products]);
 
   if (loading) {
     return (
@@ -70,16 +79,28 @@ const BrowseScreen = ({ category }: { category?: string }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{category ? `${category} Products` : 'All Products'}</Text>
+        <Text style={styles.title}>
+          {category ? `${category} Products` : 'All Products'}
+        </Text>
         {currentUser && (
           <Text style={styles.userInfo}>
             Logged in as: {currentUser.displayName || currentUser.email || 'Anonymous'}
           </Text>
         )}
+
+        <View style={styles.searchBarContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
       <FlatList
-        data={products}
+        data={filteredProducts}
         keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={({ item }) => (
@@ -88,9 +109,7 @@ const BrowseScreen = ({ category }: { category?: string }) => {
             onPress={() => {
               router.push({
                 pathname: '/hidden/display',
-                params: {
-                  id: item.id, // Pass the post ID to the DisplayScreen
-                },
+                params: { id: item.id },
               });
               console.log('Navigating to DisplayScreen with ID:', item.id);
             }}
@@ -113,18 +132,32 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
     padding: 16,
-    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
+    textAlign: 'center',
   },
   userInfo: {
     marginTop: 8,
     fontSize: 14,
     color: '#555',
+    textAlign: 'center',
+  },
+  searchBarContainer: {
+    marginTop: 12,
+    paddingHorizontal: 8,
+  },
+  searchInput: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    width: '100%',
   },
   grid: {
     paddingHorizontal: 12,
