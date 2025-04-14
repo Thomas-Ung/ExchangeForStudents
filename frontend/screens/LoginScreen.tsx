@@ -35,7 +35,7 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
           console.log('Display name updated to:', userData.name);
         }
 
-        Alert.alert('Login Successful', `Welcome back, ${userData.name || 'User'}!`);
+        alert(`Login Successful, Welcome back, ${userData.name || 'User'}!`);
 
         // Trigger the onAuthSuccess callback if provided
         if (onAuthSuccess) {
@@ -43,11 +43,11 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
         }
       } else {
         console.error('No user data found in Firestore.');
-        Alert.alert('Login Failed', 'No user data found. Please contact support.');
+        alert('Login Failed, No user data found. Please contact support.');
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Login Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
+      alert('Login FailedAn unknown error occurred.');
     }
   };
 

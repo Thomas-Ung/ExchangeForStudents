@@ -20,7 +20,7 @@ const handleInterestedClick = async (postId: string) => {
     const user = auth.currentUser;
 
     if (!user) {
-      Alert.alert("You need to be logged in to express interest.");
+      alert("You need to be logged in to express interest.");
       return;
     }
 
@@ -34,9 +34,9 @@ const handleInterestedClick = async (postId: string) => {
       interested: arrayUnion(postId), // Add the post ID to the interested array
     })
 
-    Alert.alert("Your interest has been recorded!");
+    alert("Your interest has been recorded!");
   } catch (err) {
-    Alert.alert("Failed to express interest", err instanceof Error ? err.message : "Unknown error");
+    alert("Failed to express interest: Unknown error");
   }
 };
 
