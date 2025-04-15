@@ -3,6 +3,7 @@ export class Post {
     price: number;
     quality: string;
     seller: string;
+    status: string;
     description: string;
     photo: string;
     postTime: Date;
@@ -13,6 +14,7 @@ export class Post {
       price: number,
       quality: string,
       seller: string,
+      status: string,
       description: string,
       photo: string,
       postTime: Date,
@@ -22,6 +24,7 @@ export class Post {
       this.price = price;
       this.quality = quality;
       this.seller = seller;
+      this.status = status;
       this.description = description;
       this.photo = photo;
       this.postTime = postTime;
