@@ -17,7 +17,7 @@ import { PostManager } from '../domain/managers/PostManager';
 
 const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
-    { id: string; photo?: string; description?: string; category?: string }[]
+    { id: string; photo?: string; description?: string; category?: string; status?: string }[]
   >([]);
   const [filteredProducts, setFilteredProducts] = useState<typeof products>([]);
   const [loading, setLoading] = useState(true);
@@ -46,9 +46,15 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     try {
       setLoading(true);
       const fetchedProducts = await PostManager.fetchPostsByCategory(category);
-      console.log('Fetched products:', fetchedProducts);
-      setProducts(fetchedProducts);
-      setFilteredProducts(fetchedProducts); // Set initially
+
+      // Filter out products with "Sold to" in the status field
+      const availableProducts = fetchedProducts.filter(
+        (product) => !product.status?.includes('Sold to:')
+      );
+
+      console.log('Filtered products:', availableProducts);
+      setProducts(availableProducts);
+      setFilteredProducts(availableProducts); // Set initially
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
