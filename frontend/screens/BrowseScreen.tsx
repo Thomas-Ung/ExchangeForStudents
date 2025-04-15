@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db, auth } from '../firebaseConfig';
@@ -17,10 +18,11 @@ import { PostManager } from '../domain/managers/PostManager';
 
 const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
-    { id: string; photo?: string; description?: string; category?: string; status?: string }[]
+    { id: string; photo?: string; description?: string; category?: string; status?: string; seller?: string }[]
   >([]);
   const [filteredProducts, setFilteredProducts] = useState<typeof products>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // State for refresh control
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -47,9 +49,11 @@ const BrowseScreen = ({ category }: { category?: string }) => {
       setLoading(true);
       const fetchedProducts = await PostManager.fetchPostsByCategory(category);
 
-      // Filter out products with "Sold to" in the status field
+      // Filter out products with "Sold to" in the status field or where the seller is the current user
       const availableProducts = fetchedProducts.filter(
-        (product) => !product.status?.includes('Sold to:')
+        (product) =>
+          !product.status?.toLowerCase().includes('sold to') &&
+          product.seller !== currentUser?.displayName
       );
 
       console.log('Filtered products:', availableProducts);
@@ -60,6 +64,13 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProducts();
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -93,6 +104,7 @@ const BrowseScreen = ({ category }: { category?: string }) => {
             Logged in as: {currentUser.displayName || currentUser.email || 'Anonymous'}
           </Text>
         )}
+        {currentUser && console.log('Current user displayName:', currentUser?.displayName)}
 
         <View style={styles.searchBarContainer}>
           <TextInput
@@ -103,6 +115,11 @@ const BrowseScreen = ({ category }: { category?: string }) => {
             onChangeText={setSearchQuery}
           />
         </View>
+
+        {/* Refresh Button */}
+        <TouchableOpacity style={styles.refreshButton} onPress={fetchProducts}>
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -129,6 +146,9 @@ const BrowseScreen = ({ category }: { category?: string }) => {
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.grid}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        } // Add refresh control
       />
     </SafeAreaView>
   );
@@ -164,6 +184,18 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     width: '100%',
+  },
+  refreshButton: {
+    marginTop: 12,
+    backgroundColor: '#007bff', // Blue color
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   grid: {
     paddingHorizontal: 12,
