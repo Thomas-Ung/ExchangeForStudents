@@ -1,5 +1,5 @@
-from backend_old.DatabaseManagement import PostManager
-from backend_old.DatabaseManagement import AccountManager
+from DatabaseManagement import PostManager
+from DatabaseManagement import AccountManager
 from datetime import datetime
 
 

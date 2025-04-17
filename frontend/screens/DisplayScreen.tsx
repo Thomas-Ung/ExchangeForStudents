@@ -1,8 +1,44 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, SafeAreaView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { Alert } from 'react-native';
+import { db, auth } from '../firebaseConfig'; // Import Firebase services
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore"; // Add this import
+
+// Add this function to handle "I'm Interested" clicks
+const handleInterestedClick = async (postId: string) => {
+  try {
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("You need to be logged in to express interest.");
+      return;
+    }
+
+    const userName = user.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
+    const postRef = doc(db, "Posts", postId); // Reference the specific post document
+    const userRef = doc(db, "Accounts", user.uid); // Reference the user's document in the Accounts collection
+    await updateDoc(postRef, {
+      requesters: arrayUnion(userName), // Add the user's name to the requesters array
+    });
+    await updateDoc(userRef, {
+      interested: arrayUnion(postId), // Add the post ID to the interested array
+    })
+
+    alert("Your interest has been recorded!");
+  } catch (err) {
+    alert("Failed to express interest: Unknown error");
+  }
+};
 
 const DisplayScreen = () => {
   const { id } = useLocalSearchParams();
@@ -13,11 +49,11 @@ const DisplayScreen = () => {
     const fetchPost = async () => {
       try {
         if (typeof id === 'string') {
-          const docRef = doc(db, 'Posts', id);
-          const docSnap = await getDoc(docRef);
+          const docRef = doc(db, 'Posts', id); // Reference the document by ID
+          const docSnap = await getDoc(docRef); // Fetch the document
           if (docSnap.exists()) {
-            setPost(docSnap.data());
-            console.log('Fetched post:', docSnap.data());
+            setPost({ id: docRef.id, ...docSnap.data() }); // Explicitly set the ID
+            console.log('Fetched post:', { id: docRef.id, ...docSnap.data() });
           } else {
             console.warn('No post found with that ID.');
           }
@@ -50,26 +86,72 @@ const DisplayScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Post Details</Text>
-      </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Post Details</Text>
+        </View>
 
-      <View style={styles.card}>
-        {post.imageUrl ? (
-          <Image
-            source={{ uri: post.imageUrl }}
-            style={styles.image}
-            onError={(error) =>
-              console.error('Image failed to load:', error.nativeEvent.error)
+        <View style={styles.card}>
+          {post.photo ? (
+            <Image
+              source={{ uri: post.photo }}
+              style={styles.image}
+              onError={(error) =>
+                console.error('Image failed to load:', error.nativeEvent.error)
+              }
+            />
+          ) : (
+            <Text>No Image Available</Text>
+          )}
+          <Text style={styles.caption}>{post.description || 'No Description'}</Text>
+          <Text style={styles.info}>Price: ${post.price || 'N/A'}</Text>
+          <Text style={styles.info}>Condition: {post.condition || 'N/A'}</Text>
+          <Text style={styles.info}>Category: {post.category || 'N/A'}</Text>
+
+          {/* Dynamically render additional attributes */}
+          {Object.keys(post).map((key) => {
+            if (
+              !['id', 'photo', 'description', 'price', 'condition', 'category'].includes(key)
+            ) {
+              const value = post[key];
+
+              // Check if the value is a Firestore Timestamp
+              if (value && value.seconds && value.nanoseconds) {
+                const date = new Date(value.seconds * 1000); // Convert seconds to milliseconds
+                return (
+                  <Text key={key} style={styles.info}>
+                    {key.charAt(0).toUpperCase() + key.slice(1)}: {date.toLocaleString()}
+                  </Text>
+                );
+              }
+
+              // Render other values as strings
+              return (
+                <Text key={key} style={styles.info}>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}: {value}
+                </Text>
+              );
             }
-          />
-        ) : (
-          <Text>No Image Available</Text>
-        )}
-        <Text style={styles.caption}>{post.caption || 'No Caption'}</Text>
-        <Text style={styles.info}>Price: ${post.price || 'N/A'}</Text>
-        <Text style={styles.info}>Condition: {post.condition || 'N/A'}</Text>
-      </View>
+            return null;
+          })}
+
+          {/* "I'm Interested" Button */}
+          <TouchableOpacity
+            style={styles.interestButton}
+            onPress={() => {
+              const user = auth.currentUser;
+              const userName = user?.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
+
+              alert("You've been added to the queue!");
+              handleInterestedClick(post.id);
+              console.log('Current user:', auth.currentUser);
+              console.log(`${userName} expressed interest in post with ID: ${post.id}`);
+            }}
+          >
+            <Text style={styles.buttonText}>I'm Interested</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -112,6 +194,19 @@ const styles = StyleSheet.create({
   info: {
     fontSize: 14,
     color: '#555',
+  },
+  interestButton: {
+    marginTop: 20,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

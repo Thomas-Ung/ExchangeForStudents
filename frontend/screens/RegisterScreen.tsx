@@ -1,37 +1,50 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, Button, View, Text, Alert, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig'; // Import Firebase services
 
 interface RegisterScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess?: () => void; // Optional callback for successful registration
 }
 
 export default function RegisterScreen({ onAuthSuccess }: RegisterScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const router = useRouter(); // Use Expo Router's navigation
 
   const handleRegister = async () => {
     try {
-      const userRef = doc(db, "Accounts", username);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        Alert.alert("Error", "User with this username already exists.");
-      } else {
-        const newUser = {
-          name: username,
-          password: password,
-        };
-        await setDoc(userRef, newUser);
-        Alert.alert('Registration Successful', `Welcome, ${username}!`);
-        onAuthSuccess(); // Notify parent component of successful registration
-        router.push('./tabs');
+      // Create a new user with Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log('User registered:', user);
+
+      // Update the user's displayName in Firebase Authentication
+      await updateProfile(user, { displayName: username });
+      console.log('Display name updated to:', username);
+
+      // Store additional user details in Firestore
+      const userRef = doc(db, 'Accounts', user.uid); // Use UID as the document ID
+      await setDoc(userRef, {
+        name: username,
+        email: email,
+        createdAt: new Date(),
+        posts: [], // Initialize with an empty array for posts
+        interested: [], // Initialize with an empty array for interested posts
+      });
+
+      console.log('User data saved to Firestore.');
+
+      Alert.alert('Registration Successful', `Welcome, ${username}!`);
+
+      // Trigger the onAuthSuccess callback if provided
+      if (onAuthSuccess) {
+        onAuthSuccess();
       }
     } catch (error) {
-      console.error("Error during registration:", error);
+      console.error('Error during registration:', error);
       Alert.alert('Registration Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
     }
   };
@@ -48,13 +61,21 @@ export default function RegisterScreen({ onAuthSuccess }: RegisterScreenProps) {
       />
       <TextInput
         style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      <TextInput
+        style={styles.input}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
       <Button title="Register" onPress={handleRegister} />
-      <TouchableOpacity onPress={() => router.push('/login')}>
+      <TouchableOpacity onPress={() => onAuthSuccess && onAuthSuccess()}>
         <Text style={styles.loginText}>Already have an account? Login here</Text>
       </TouchableOpacity>
     </View>
@@ -82,7 +103,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 4,
   },
-loginText: {
+  loginText: {
     marginTop: 16,
     color: '#007BFF',
     textAlign: 'center',
