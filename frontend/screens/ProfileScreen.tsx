@@ -1,192 +1,217 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, SafeAreaView, ActivityIndicator, Button, ScrollView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
+import { auth, db } from '../firebaseConfig'; // Import Firebase auth and Firestore
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 
-const AccountScreen = () => {
-  const { userId } = useLocalSearchParams();
+const ProfileScreen = () => {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [bio, setBio] = useState('');
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    // Fetch the user's name from Firebase Authentication
+    const user = auth.currentUser;
+    if (user) {
+      setUserName(user.displayName || 'Anonymous'); // Use displayName or fallback to "Anonymous"
+    }
+  }, []);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+
+    if (!user) return;
+
+    const userRef = doc(db, 'Accounts', user.uid);
+
+    const fetchInterestedPosts = async () => {
       try {
-        if (typeof userId === 'string') {
-          const userRef = doc(db, 'Users', userId);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            setUser(userSnap.data());
-          } else {
-            console.warn('No user found with that ID.');
-          }
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          console.error('User document does not exist.');
+          return;
         }
+
+        const userData = userSnap.data();
+        const interestedPosts = userData?.interested || [];
+
+        // Listen for changes to the status of each post
+        interestedPosts.forEach((postId: string) => {
+          const postRef = doc(db, 'Posts', postId);
+
+          onSnapshot(postRef, (postSnap) => {
+            if (postSnap.exists()) {
+              const postData = postSnap.data();
+              Alert.alert(
+                'Post Status Updated',
+                `The status of the post "${postData?.description || 'Untitled Post'}" has changed to: ${postData?.status}`
+              );
+            }
+          });
+        });
       } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error fetching interested posts:', error);
       }
     };
 
-    fetchUser();
-  }, [userId]);
+    fetchInterestedPosts();
+  }, []);
 
-  const handleViewPosts = async () => {
-    try {
-      if (typeof userId === 'string') {
-        const postsRef = collection(db, 'Posts');
-        const q = query(postsRef, where('userId', '==', userId));
-        const querySnapshot = await getDocs(q);
-        const userPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setPosts(userPosts);
-      }
-    } catch (error) {
-      console.error('Error fetching posts:', error);
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      alert('Permission to access camera roll is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
     }
   };
 
-  const handleEditPost = (postId: string) => {
-    router.push(`/editPost/${postId}`); 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth); // Log out the user
+      router.replace('/'); // Redirect to the login screen
+      Alert.alert('Logged Out', 'You have been successfully logged out.');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      Alert.alert('Error', 'Failed to log out. Please try again.');
+    }
   };
-
-  const handleViewQueue = (postId: string) => {
-    router.push(`/viewQueue/${postId}`); 
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
-
-  if (!user) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>User not found.</Text>
-      </View>
-    );
-  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <Text style={styles.title}>Account Details</Text>
-        </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>Profile</Text>
+      {userName && <Text style={styles.userName}>{userName}</Text>}
 
-        <View style={styles.card}>
-          {user.profilePictureUrl ? (
-            <Image
-              source={{ uri: user.profilePictureUrl }}
-              style={styles.image}
-            />
-          ) : (
-            <Text>No Profile Picture</Text>
-          )}
-          <Text style={styles.name}>{user.username || 'Unnamed User'}</Text>
-          <Text style={styles.info}>Email: {user.email || 'N/A'}</Text>
-          <Text style={styles.info}>Bio: {user.bio || 'No bio provided.'}</Text>
-        </View>
-
-        {/* Button to view posts */}
-        <View style={styles.buttonContainer}>
-          <Button title="View My Posts" onPress={handleViewPosts} />
-        </View>
-
-        {/* List of user's posts */}
-        {posts.length > 0 && (
-          <View style={styles.postsContainer}>
-            <Text style={styles.postsTitle}>My Posts:</Text>
-            {posts.map((post) => (
-              <View key={post.id} style={styles.postCard}>
-                <Text style={styles.postCaption}>{post.caption || 'No caption'}</Text>
-                <Text>Status: {post.status || 'Unknown'}</Text>
-                <Button title="Edit Post" onPress={() => handleEditPost(post.id)} />
-                <Button title="View Queue" onPress={() => handleViewQueue(post.id)} />
-              </View>
-            ))}
+      <TouchableOpacity onPress={pickImage}>
+        {profileImage ? (
+          <Image source={{ uri: profileImage }} style={styles.profileImage} />
+        ) : (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>Tap to add photo</Text>
           </View>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </TouchableOpacity>
+
+      <TextInput
+        placeholder="Write a short bio..."
+        value={bio}
+        onChangeText={setBio}
+        style={styles.bioInput}
+        multiline
+      />
+
+      <TouchableOpacity
+        style={styles.viewPostsButton}
+        onPress={() => router.push('/hidden/ViewPosts')}
+      >
+        <Text style={styles.viewPostsButtonText}>View My Posts</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.viewPostsButton}
+        onPress={() => router.push('/hidden/InterestsPosts')}
+      >
+        <Text style={styles.viewPostsButtonText}>View Posts I'm Interested In</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Log Out</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    padding: 16,
+  container: {
+    flex: 1,
+    padding: 24,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    backgroundColor: '#fff',
   },
   title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  userName: {
     fontSize: 20,
     fontWeight: '600',
+    marginBottom: 16,
+    color: '#333',
   },
-  card: {
-    margin: 16,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-    padding: 16,
-    alignItems: 'center',
-  },
-  image: {
+  profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    resizeMode: 'cover',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  name: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  info: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
+  placeholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#eee',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  buttonContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
+  placeholderText: {
+    color: '#999',
+    fontSize: 14,
   },
-  postsContainer: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-  },
-  postsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  postCard: {
-    backgroundColor: '#f2f2f2',
-    padding: 12,
+  bioInput: {
+    width: '100%',
+    height: 100,
+    borderColor: '#ccc',
+    borderWidth: 1,
     borderRadius: 8,
-    marginBottom: 12,
+    padding: 12,
+    textAlignVertical: 'top',
+    marginTop: 16,
   },
-  postCaption: {
+  viewPostsButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  viewPostsButtonText: {
+    color: '#fff',
     fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    backgroundColor: '#FF5252',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
-export default AccountScreen;
+export default ProfileScreen;

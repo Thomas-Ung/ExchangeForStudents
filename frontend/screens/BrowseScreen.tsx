@@ -8,27 +8,57 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
+  RefreshControl,
 } from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
 import { useRouter } from 'expo-router';
+import { db, auth } from '../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import { PostManager } from '../domain/managers/PostManager';
 
-const BrowseScreen = () => {
+const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
-    { id: string; imageUrl?: string; caption?: string; price?: number; condition?: string }[]
+    { id: string; photo?: string; description?: string; category?: string; status?: string; seller?: string }[]
   >([]);
+  const [filteredProducts, setFilteredProducts] = useState<typeof products>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // State for refresh control
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('Authenticated user:', {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'Anonymous',
+        });
+        setCurrentUser(user);
+      } else {
+        console.log('No user is currently authenticated.');
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchProducts = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'Posts'));
-      const fetchedProducts = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      console.log('Fetched products:', fetchedProducts);
-      setProducts(fetchedProducts);
+      setLoading(true);
+      const fetchedProducts = await PostManager.fetchPostsByCategory(category);
+
+      // Filter out products with "Sold to" in the status field or where the seller is the current user
+      const availableProducts = fetchedProducts.filter(
+        (product) =>
+          !product.status?.toLowerCase().includes('sold to') &&
+          product.seller !== currentUser?.displayName
+      );
+
+      console.log('Filtered products:', availableProducts);
+      setProducts(availableProducts);
+      setFilteredProducts(availableProducts); // Set initially
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -36,9 +66,24 @@ const BrowseScreen = () => {
     }
   };
 
+  // Refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProducts();
+    setRefreshing(false);
+  };
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [category]);
+
+  useEffect(() => {
+    const query = searchQuery.toLowerCase();
+    const filtered = products.filter((product) =>
+      product.description?.toLowerCase().includes(query)
+    );
+    setFilteredProducts(filtered);
+  }, [searchQuery, products]);
 
   if (loading) {
     return (
@@ -51,35 +96,59 @@ const BrowseScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Browse Products</Text>
+        <Text style={styles.title}>
+          {category ? `${category} Products` : 'All Products'}
+        </Text>
+        {currentUser && (
+          <Text style={styles.userInfo}>
+            Logged in as: {currentUser.displayName || currentUser.email || 'Anonymous'}
+          </Text>
+        )}
+        {currentUser && console.log('Current user displayName:', currentUser?.displayName)}
+
+        <View style={styles.searchBarContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* Refresh Button */}
+        <TouchableOpacity style={styles.refreshButton} onPress={fetchProducts}>
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={products}
+        data={filteredProducts}
         keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
             onPress={() => {
-              console.log('Navigating with item:', item);
               router.push({
-                pathname: '/display',
-                params: {
-                  id: item.id,
-                },
+                pathname: '/hidden/display',
+                params: { id: item.id },
               });
+              console.log('Navigating to DisplayScreen with ID:', item.id);
             }}
           >
-            {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            {item.photo ? (
+              <Image source={{ uri: item.photo }} style={styles.image} />
             ) : (
               <Text>No Image</Text>
             )}
-            <Text style={styles.caption}>{item.caption || 'No Caption'}</Text>
+            <Text style={styles.caption}>{item.description || 'No Description'}</Text>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.grid}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        } // Add refresh control
       />
     </SafeAreaView>
   );
@@ -89,12 +158,43 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
     padding: 16,
-    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
   title: {
     fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  userInfo: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'center',
+  },
+  searchBarContainer: {
+    marginTop: 12,
+    paddingHorizontal: 8,
+  },
+  searchInput: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    width: '100%',
+  },
+  refreshButton: {
+    marginTop: 12,
+    backgroundColor: '#007bff', // Blue color
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
   grid: {
