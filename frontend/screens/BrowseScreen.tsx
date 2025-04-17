@@ -27,29 +27,13 @@ const BrowseScreen = ({ category }: { category?: string }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log('Authenticated user:', {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || 'Anonymous',
-        });
-        setCurrentUser(user);
-      } else {
-        console.log('No user is currently authenticated.');
-        setCurrentUser(null);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
+  // Fetch products from the database
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const fetchedProducts = await PostManager.fetchPostsByCategory(category);
 
-      // Filter out products with "Sold to" in the status field or where the seller is the current user
+      // Apply filtering logic directly in fetchProducts
       const availableProducts = fetchedProducts.filter(
         (product) =>
           !product.status?.toLowerCase().includes('sold to') &&
@@ -73,10 +57,32 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     setRefreshing(false);
   };
 
+  // Set up the current user and fetch products after the user is authenticated
   useEffect(() => {
-    fetchProducts();
-  }, [category]);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('Authenticated user:', {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'Anonymous',
+        });
+        setCurrentUser(user);
+      } else {
+        console.log('No user is currently authenticated.');
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
+  // Fetch products only after currentUser is set
+  useEffect(() => {
+    if (currentUser) {
+      fetchProducts();
+    }
+  }, [currentUser, category]);
+
+  // Filter products based on the search query
   useEffect(() => {
     const query = searchQuery.toLowerCase();
     const filtered = products.filter((product) =>
@@ -104,8 +110,6 @@ const BrowseScreen = ({ category }: { category?: string }) => {
             Logged in as: {currentUser.displayName || currentUser.email || 'Anonymous'}
           </Text>
         )}
-        {currentUser && console.log('Current user displayName:', currentUser?.displayName)}
-
         <View style={styles.searchBarContainer}>
           <TextInput
             style={styles.searchInput}
@@ -148,7 +152,7 @@ const BrowseScreen = ({ category }: { category?: string }) => {
         contentContainerStyle={styles.grid}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        } // Add refresh control
+        }
       />
     </SafeAreaView>
   );
