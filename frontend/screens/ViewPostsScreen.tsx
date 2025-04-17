@@ -8,86 +8,77 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker'; // Install this library if not already installed
+import { Picker } from '@react-native-picker/picker';
 import { auth, db } from '../firebaseConfig';
 import { doc, getDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 const ViewPosts = () => {
   const [posts, setPosts] = useState<{ id: string; title?: string; status?: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statuses, setStatuses] = useState<{ [key: string]: string }>({}); // Track statuses for each post
+  const [statuses, setStatuses] = useState<{ [key: string]: string }>({});
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchUserPosts = async () => {
-      try {
-        const user = auth.currentUser;
+  const fetchUserPosts = async () => {
+    try {
+      setLoading(true); // Show loading indicator while fetching data
+      const user = auth.currentUser;
 
-        if (!user) {
-          Alert.alert('Error', 'You must be logged in to view your posts.');
-          console.log('No user is logged in.');
-          return;
-        }
-
-        console.log('Fetching posts for user:', user.uid);
-
-        // Reference to the user's document in the Accounts collection
-        const userRef = doc(db, 'Accounts', user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          Alert.alert('Error', 'User document does not exist.');
-          console.log('User document does not exist in the Accounts collection.');
-          return;
-        }
-
-        // Get the posts array from the user's document
-        const userData = userSnap.data();
-        console.log('User document data:', userData);
-
-        const postIds = userData.posts || [];
-        console.log('Post IDs from user document:', postIds);
-
-        if (postIds.length === 0) {
-          console.log('No posts found for this user.');
-          setPosts([]); // No posts to display
-          setLoading(false);
-          return;
-        }
-
-        // Fetch the posts from the Posts collection
-        const postsRef = collection(db, 'Posts');
-        console.log('Fetching posts from Posts collection with IDs:', postIds);
-
-        const q = query(postsRef, where('__name__', 'in', postIds)); // Use the post IDs to fetch posts
-        const querySnapshot = await getDocs(q);
-
-        console.log('Fetched posts snapshot:', querySnapshot.docs);
-
-        const fetchedPosts = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as { title?: string; status?: string; description?: string; photo?: string }),
-        }));
-
-        console.log('Fetched posts:', fetchedPosts);
-
-        setPosts(fetchedPosts);
-
-        // Initialize statuses for each post
-        const initialStatuses: { [key: string]: string } = {};
-        fetchedPosts.forEach((post) => {
-          initialStatuses[post.id] = (post.status as string) || 'available';
-        });
-        setStatuses(initialStatuses);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        Alert.alert('Error', 'Failed to fetch posts. Please try again later.');
-      } finally {
-        setLoading(false);
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to view your posts.');
+        console.log('No user is logged in.');
+        return;
       }
-    };
 
+      console.log('Fetching posts for user:', user.uid);
+
+      const userRef = doc(db, 'Accounts', user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        Alert.alert('Error', 'User document does not exist.');
+        console.log('User document does not exist in the Accounts collection.');
+        return;
+      }
+
+      const userData = userSnap.data();
+      const postIds = userData.posts || [];
+      console.log('Post IDs from user document:', postIds);
+
+      if (postIds.length === 0) {
+        console.log('No posts found for this user.');
+        setPosts([]);
+        setLoading(false);
+        return;
+      }
+
+      const postsRef = collection(db, 'Posts');
+      const q = query(postsRef, where('__name__', 'in', postIds));
+      const querySnapshot = await getDocs(q);
+
+      const fetchedPosts = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as { title?: string; status?: string; description?: string; photo?: string }),
+      }));
+
+      console.log('Fetched posts:', fetchedPosts);
+
+      setPosts(fetchedPosts);
+
+      const initialStatuses: { [key: string]: string } = {};
+      fetchedPosts.forEach((post) => {
+        initialStatuses[post.id] = (post.status as string) || 'available';
+      });
+      setStatuses(initialStatuses);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      Alert.alert('Error', 'Failed to fetch posts. Please try again later.');
+    } finally {
+      setLoading(false); // Stop loading in all cases
+    }
+  };
+
+  useEffect(() => {
     fetchUserPosts();
   }, []);
 
@@ -125,7 +116,7 @@ const ViewPosts = () => {
       </Picker>
       <TouchableOpacity
         style={styles.viewBuyersButton}
-        onPress={() => router.push(`/hidden/ViewQueue?postId=${item.id}`)} // Pass postId as a query parameter
+        onPress={() => router.push(`/hidden/ViewQueue?postId=${item.id}`)}
       >
         <Text style={styles.viewBuyersButtonText}>View Interested Buyers</Text>
       </TouchableOpacity>
@@ -143,6 +134,9 @@ const ViewPosts = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>My Posts</Text>
+      <TouchableOpacity style={styles.refreshButton} onPress={fetchUserPosts}>
+        <Text style={styles.refreshButtonText}>Refresh</Text>
+      </TouchableOpacity>
       {posts.length === 0 ? (
         <Text>You have not uploaded any posts yet.</Text>
       ) : (
@@ -210,6 +204,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewBuyersButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  refreshButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  refreshButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
