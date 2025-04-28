@@ -12,38 +12,13 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { Alert } from 'react-native';
 import { db, auth } from '../firebaseConfig'; // Import Firebase services
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore"; // Add this import
-
-// Add this function to handle "I'm Interested" clicks
-const handleInterestedClick = async (postId: string) => {
-  try {
-    const user = auth.currentUser;
-
-    if (!user) {
-      alert("You need to be logged in to express interest.");
-      return;
-    }
-
-    const userName = user.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
-    const postRef = doc(db, "Posts", postId); // Reference the specific post document
-    const userRef = doc(db, "Accounts", user.uid); // Reference the user's document in the Accounts collection
-    await updateDoc(postRef, {
-      requesters: arrayUnion(userName), // Add the user's name to the requesters array
-    });
-    await updateDoc(userRef, {
-      interested: arrayUnion(postId), // Add the post ID to the interested array
-    })
-
-    alert("Your interest has been recorded!");
-  } catch (err) {
-    alert("Failed to express interest: Unknown error");
-  }
-};
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"; // Add this import
 
 const DisplayScreen = () => {
   const { id } = useLocalSearchParams();
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isInterested, setIsInterested] = useState(false); // Track if the user is interested
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -54,6 +29,13 @@ const DisplayScreen = () => {
           if (docSnap.exists()) {
             setPost({ id: docRef.id, ...docSnap.data() }); // Explicitly set the ID
             console.log('Fetched post:', { id: docRef.id, ...docSnap.data() });
+
+            // Check if the current user is already in the requesters array
+            const user = auth.currentUser;
+            if (user) {
+              const userName = user.displayName || "Anonymous";
+              setIsInterested(docSnap.data().requesters?.includes(userName));
+            }
           } else {
             console.warn('No post found with that ID.');
           }
@@ -67,6 +49,58 @@ const DisplayScreen = () => {
 
     fetchPost();
   }, [id]);
+
+  const handleInterestedClick = async (postId: string) => {
+    try {
+      const user = auth.currentUser;
+
+      if (!user) {
+        alert("You need to be logged in to express interest.");
+        return;
+      }
+
+      const userName = user.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
+      const postRef = doc(db, "Posts", postId); // Reference the specific post document
+      const userRef = doc(db, "Accounts", user.uid); // Reference the user's document in the Accounts collection
+      await updateDoc(postRef, {
+        requesters: arrayUnion(userName), // Add the user's name to the requesters array
+      });
+      await updateDoc(userRef, {
+        interested: arrayUnion(postId), // Add the post ID to the interested array
+      });
+
+      setIsInterested(true); // Update the state to reflect the interest
+      alert("Your interest has been recorded!");
+    } catch (err) {
+      alert("Failed to express interest: Unknown error");
+    }
+  };
+
+  const handleRemoveInterest = async (postId: string) => {
+    try {
+      const user = auth.currentUser;
+
+      if (!user) {
+        alert("You need to be logged in to remove interest.");
+        return;
+      }
+
+      const userName = user.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
+      const postRef = doc(db, "Posts", postId); // Reference the specific post document
+      const userRef = doc(db, "Accounts", user.uid); // Reference the user's document in the Accounts collection
+      await updateDoc(postRef, {
+        requesters: arrayRemove(userName), // Remove the user's name from the requesters array
+      });
+      await updateDoc(userRef, {
+        interested: arrayRemove(postId), // Remove the post ID from the interested array
+      });
+
+      setIsInterested(false); // Update the state to reflect the removal of interest
+      alert("Your interest has been removed!");
+    } catch (err) {
+      alert("Failed to remove interest: Unknown error");
+    }
+  };
 
   if (loading) {
     return (
@@ -135,20 +169,23 @@ const DisplayScreen = () => {
             return null;
           })}
 
-          {/* "I'm Interested" Button */}
+          {/* "I'm Interested" or "Remove Interest" Button */}
           <TouchableOpacity
-            style={styles.interestButton}
+            style={[
+              styles.interestButton,
+              { backgroundColor: isInterested ? '#ccc' : '#4CAF50' },
+            ]}
             onPress={() => {
-              const user = auth.currentUser;
-              const userName = user?.displayName || "Anonymous"; // Get the user's name or fallback to "Anonymous"
-
-              alert("You've been added to the queue!");
-              handleInterestedClick(post.id);
-              console.log('Current user:', auth.currentUser);
-              console.log(`${userName} expressed interest in post with ID: ${post.id}`);
+              if (isInterested) {
+                handleRemoveInterest(post.id);
+              } else {
+                handleInterestedClick(post.id);
+              }
             }}
           >
-            <Text style={styles.buttonText}>I'm Interested</Text>
+            <Text style={styles.buttonText}>
+              {isInterested ? 'Remove Interest' : "I'm Interested"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -197,7 +234,6 @@ const styles = StyleSheet.create({
   },
   interestButton: {
     marginTop: 20,
-    backgroundColor: '#4CAF50',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
