@@ -43,11 +43,36 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
         }
       } else {
         console.error('No user data found in Firestore.');
-        alert('Login Failed, No user data found. Please contact support.');
+        alert('Login Failed: No user data found. Please contact support.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      alert('Login FailedAn unknown error occurred.');
+      console.log(error.code)
+
+      // Ensure the error object has a code property
+      if (error.code) {
+        // Handle specific Firebase Authentication errors
+        switch (error.code) {
+          case 'auth/user-not-found':
+            alert('Login Failed: No user found with this email. Please register or try again.');
+            break;
+          case 'auth/invalid-email':
+            alert('Login Failed: The email address is not in the correct format.');
+            break;
+          case 'auth/wrong-password':
+            alert('Login Failed: Incorrect password. Please try again.');
+            break;
+          case 'auth/invalid-credential':
+            alert('Login Failed: The credentials provided are invalid. Please check your email and password.');
+            break;
+          default:
+            alert('Login Failed: An unknown error occurred. Please try again later.');
+            break;
+        }
+      } else {
+        // Handle unexpected errors
+        alert('Login Failed: An unexpected error occurred. Please try again later.');
+      }
     }
   };
 
