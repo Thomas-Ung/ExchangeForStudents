@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { auth, db } from '../firebaseConfig';
-import { doc, getDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, updateDoc, deleteDoc, arrayRemove } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 
 const ViewPosts = () => {
@@ -97,6 +97,47 @@ const ViewPosts = () => {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    try {
+      Alert.alert(
+        'Confirm Delete',
+        'Are you sure you want to delete this post?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              const postRef = doc(db, 'Posts', postId);
+              const user = auth.currentUser;
+
+              if (!user) {
+                Alert.alert('Error', 'You must be logged in to delete a post.');
+                return;
+              }
+
+              // Delete the post from Firestore
+              await deleteDoc(postRef);
+
+              // Remove the post ID from the user's "posts" array
+              const userRef = doc(db, 'Accounts', user.uid);
+              await updateDoc(userRef, {
+                posts: arrayRemove(postId),
+              });
+
+              // Update the UI
+              setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+              Alert.alert('Success', 'Post deleted successfully.');
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      Alert.alert('Error', 'Failed to delete the post. Please try again.');
+    }
+  };
+
   const renderPost = ({ item }: any) => (
     <View style={styles.postCard}>
       <Image
@@ -119,6 +160,22 @@ const ViewPosts = () => {
         onPress={() => router.push(`/hidden/ViewQueue?postId=${item.id}`)}
       >
         <Text style={styles.viewBuyersButtonText}>View Interested Buyers</Text>
+      </TouchableOpacity>
+
+      {/* Edit Button */}
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => router.push(`/hidden/display?postId=${item.id}`)} // Navigate to an edit screen
+      >
+        <Text style={styles.editButtonText}>Edit</Text>
+      </TouchableOpacity>
+
+      {/* Delete Button */}
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeletePost(item.id)} // Call the delete function
+      >
+        <Text style={styles.deleteButtonText}>Delete</Text>
       </TouchableOpacity>
     </View>
   );
@@ -217,6 +274,30 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  editButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#FFA500', // Orange color for edit
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#FF0000', // Red color for delete
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
