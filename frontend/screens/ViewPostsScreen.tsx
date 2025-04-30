@@ -99,44 +99,35 @@ const ViewPosts = () => {
 
   const handleDeletePost = async (postId: string) => {
     try {
-      Alert.alert(
-        'Confirm Delete',
-        'Are you sure you want to delete this post?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const postRef = doc(db, 'Posts', postId);
-              const user = auth.currentUser;
-
-              if (!user) {
-                Alert.alert('Error', 'You must be logged in to delete a post.');
-                return;
-              }
-
-              // Delete the post from Firestore
-              await deleteDoc(postRef);
-
-              // Remove the post ID from the user's "posts" array
-              const userRef = doc(db, 'Accounts', user.uid);
-              await updateDoc(userRef, {
-                posts: arrayRemove(postId),
-              });
-
-              // Update the UI
-              setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-              Alert.alert('Success', 'Post deleted successfully.');
-            },
-          },
-        ]
-      );
+      const confirmed = confirm('Are you sure you want to delete this post?');
+      if (!confirmed) return;
+  
+      const postRef = doc(db, 'Posts', postId);
+      const user = auth.currentUser;
+  
+      if (!user) {
+        alert('You must be logged in to delete a post.');
+        return;
+      }
+  
+      // Delete the post from Firestore
+      await deleteDoc(postRef);
+  
+      // Remove the post ID from the user's "posts" array
+      const userRef = doc(db, 'Accounts', user.uid);
+      await updateDoc(userRef, {
+        posts: arrayRemove(postId),
+      });
+  
+      // Update the UI
+      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+      alert('Post deleted successfully.');
     } catch (error) {
       console.error('Error deleting post:', error);
-      Alert.alert('Error', 'Failed to delete the post. Please try again.');
+      alert('Failed to delete the post. Please try again.');
     }
   };
+  
 
   const renderPost = ({ item }: any) => (
     <View style={styles.postCard}>
