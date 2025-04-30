@@ -156,7 +156,13 @@ const ViewPosts = () => {
       {/* Edit Button */}
       <TouchableOpacity
         style={styles.editButton}
-        onPress={() => router.push(`/hidden/display?postId=${item.id}`)} // Navigate to an edit screen
+        onPress={() => {
+          router.push({
+            pathname: '/hidden/edit',
+            params: { id: item.id },
+          });
+          console.log('Navigating to EditScreen with ID:', item.id);
+        }} // Navigate to an edit screen
       >
         <Text style={styles.editButtonText}>Edit</Text>
       </TouchableOpacity>
