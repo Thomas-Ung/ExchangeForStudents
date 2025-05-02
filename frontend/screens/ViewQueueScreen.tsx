@@ -123,6 +123,7 @@ const ViewQueueScreen = () => {
       // Update the post status
       await updateDoc(postRef, {
         status: `Sold to: ${buyer}`,
+        requesters: arrayRemove(buyer)
       });
 
       console.log('Accepted', `${buyer}'s request has been accepted. The post is now marked as sold.`);
