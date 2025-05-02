@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface Conversation {
   id: string;
@@ -18,8 +18,14 @@ interface Conversation {
   product: string;
 }
 
+interface TranslatedConversation {
+  id: string;
+  participants: string[];
+  product: string;
+}
+
 const ChatScreen = () => {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<TranslatedConversation[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -51,8 +57,33 @@ const ChatScreen = () => {
               const convoSnap = await getDoc(convoRef);
 
               if (convoSnap.exists()) {
-                const convoData = convoSnap.data();
-                return { id: convoSnap.id, ...convoData } as Conversation;
+                const convoData = convoSnap.data() as Conversation;
+
+                // Translate participants to names
+                const participants = await Promise.all(
+                  convoData.participants.map(async (participantId) => {
+                    const accountRef = doc(db, 'Accounts', participantId);
+                    const accountSnap = await getDoc(accountRef);
+                    return accountSnap.exists() ? accountSnap.data()?.name || 'Unknown' : 'Unknown';
+                  })
+                );
+
+                // Fetch product description using batch query
+                const productRef = doc(db, 'Posts', convoData.product);
+                const productSnap = await getDoc(productRef);
+
+                let productDescription = 'Unknown Product';
+                if (productSnap.exists()) {
+                  productDescription = productSnap.data()?.description || 'Unknown Product';
+                } else {
+                  console.warn(`Post not found for ID: ${convoData.product}`);
+                }
+
+                return {
+                  id: convoSnap.id,
+                  participants,
+                  product: productDescription,
+                } as TranslatedConversation;
               }
               return null;
             } catch (error) {
@@ -62,7 +93,7 @@ const ChatScreen = () => {
           })
         );
 
-        setConversations(fetchedConversations.filter(Boolean) as Conversation[]);
+        setConversations(fetchedConversations.filter(Boolean) as TranslatedConversation[]);
       } catch (error) {
         console.error('Error fetching conversations:', error);
         Alert.alert('Error', 'Failed to fetch conversations. Please try again later.');
@@ -74,7 +105,7 @@ const ChatScreen = () => {
     fetchConversations();
   }, []);
 
-  const renderConversation = ({ item }: { item: Conversation }) => (
+  const renderConversation = ({ item }: { item: TranslatedConversation }) => (
     <TouchableOpacity
       style={styles.conversationCard}
       onPress={() =>
