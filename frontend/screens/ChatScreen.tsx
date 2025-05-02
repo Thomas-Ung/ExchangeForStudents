@@ -73,13 +73,13 @@ const ChatScreen = () => {
                   [convoData.product].map(async (productId) => {
                     const productRef = doc(db, 'Posts', productId);
                     const productSnap = await getDoc(productRef);
-                    return productSnap.exists() ? productSnap.data()?.description || 'Unknown' : 'Unknown';
-                    // if (productSnap.exists()) {
-                    //   return productSnap.data()?.description || 'Unknown Product';
-                    // } else {
-                    //   console.warn(`Post not found for ID: ${productId}`);
-                    //   return 'Unknown Product';
-                    // }
+                    //return productSnap.exists() ? productSnap.data()?.description || 'Unknown' : 'Unknown';
+                    if (productSnap.exists()) {
+                      return productSnap.data()?.description || 'Unknown Product';
+                    } else {
+                      console.warn(`Post not found for ID: ${productId}`);
+                      return 'Unknown Product';
+                    }
                   })
                 ).then((descriptions) => descriptions[0]); // Extract the single description
 
