@@ -1,8 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  arrayRemove, 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  getDocs,
+  serverTimestamp 
+} from 'firebase/firestore';
+import { db, auth } from '../firebaseConfig';
 
 const ViewQueueScreen = () => {
   const { postId } = useLocalSearchParams(); // Retrieve postId from the query string
@@ -50,19 +61,69 @@ const ViewQueueScreen = () => {
 
   const handleAccept = async (buyer: string) => {
     try {
-      const postRef = doc(db, 'Posts', Array.isArray(postId) ? postId[0] : postId);
+      // Get the post ID (handling both string and array cases)
+      const postIdString = Array.isArray(postId) ? postId[0] : postId;
+      const postRef = doc(db, 'Posts', postIdString);
+      const postDoc = await getDoc(postRef);
+      
+      if (!postDoc.exists()) {
+        alert('Error: Post not found');
+        return;
+      }
+      
+      // Get the current user (seller)
+      const seller = auth.currentUser;
+      if (!seller || !seller.uid) {
+        alert('Error: You must be logged in to accept requests');
+        return;
+      }
+      
+      // Find the buyer's UID from Accounts collection based on their display name
+      const accountsRef = collection(db, 'Accounts');
+      const q = query(accountsRef, where('name', '==', buyer));
+      const querySnapshot = await getDocs(q);
 
-      // Update the status field to "Sold to: {buyer's username}"
+      console.log(buyer); 
+      console.log(q); 
+      console.log(querySnapshot.docs.map(doc => doc.data()));
+      
+      if (querySnapshot.empty) {
+        alert(`Error: Could not find user account for ${buyer}`);
+        return;
+      }
+      
+      const buyerDoc = querySnapshot.docs[0];
+      const buyerUid = buyerDoc.id;
+      
+      // Create a new conversation document
+      const conversationsRef = collection(db, 'conversations');
+      const conversationDoc = await addDoc(conversationsRef, {
+        participants: [seller.uid, buyerUid],
+        product: postIdString,
+        createdAt: serverTimestamp(),
+        lastMessage: "You have been accepted",
+        postTitle: postDoc.data().description || "Untitled Post",
+      });
+      
+      // Add initial welcome message to the messages subcollection
+      const messagesRef = collection(db, 'conversations', conversationDoc.id, 'messages');
+      await addDoc(messagesRef, {
+        content: "You have been accepted",
+        sender: seller.uid,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Update the post status
       await updateDoc(postRef, {
         status: `Sold to: ${buyer}`,
       });
 
       console.log('Accepted', `${buyer}'s request has been accepted. The post is now marked as sold.`);
-      Alert.alert('Accepted', `${buyer}'s request has been accepted.`);
+      alert(`Accepted: ${buyer}'s request has been accepted and a conversation has been started.`);
       fetchRequesters(); // Refresh the list after accepting
     } catch (error) {
       console.error('Error accepting request:', error);
-      Alert.alert('Error', 'Failed to accept the request.');
+      alert('Error: Failed to accept the request.');
     }
   };
 
