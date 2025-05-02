@@ -6,6 +6,7 @@ import {
   getDoc, 
   updateDoc, 
   arrayRemove, 
+  arrayUnion,
   collection, 
   addDoc, 
   query, 
@@ -109,6 +110,16 @@ const ViewQueueScreen = () => {
         timestamp: new Date().toISOString(),
       });
 
+      const sellerRef = doc(db, 'Accounts', seller.uid);
+      await updateDoc(sellerRef, {
+        conversations: arrayUnion(conversationDoc.id)
+      });
+
+      const buyerRef = doc(db, 'Accounts', buyerUid);
+      await updateDoc(buyerRef, {
+        conversations: arrayUnion(conversationDoc.id)
+      });
+
       // Update the post status
       await updateDoc(postRef, {
         status: `Sold to: ${buyer}`,
@@ -119,7 +130,7 @@ const ViewQueueScreen = () => {
       fetchRequesters(); // Refresh the list after accepting
     } catch (error) {
       console.error('Error accepting request:', error);
-      alert('Error: Failed to accept the request.');
+      alert('Error:Failed to accept the request.');
     }
   };
 
