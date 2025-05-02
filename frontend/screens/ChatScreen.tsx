@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface Conversation {
   id: string;
@@ -22,6 +22,7 @@ interface TranslatedConversation {
   id: string;
   participants: string[];
   product: string;
+  productId: string;
 }
 
 const ChatScreen = () => {
@@ -35,7 +36,7 @@ const ChatScreen = () => {
         const user = auth.currentUser;
 
         if (!user) {
-          Alert.alert('Error', 'You must be logged in to view your conversations.');
+          alert('Error:  You must be logged in to view your conversations.');
           return;
         }
 
@@ -43,7 +44,7 @@ const ChatScreen = () => {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          Alert.alert('Error', 'User document does not exist.');
+          alert('Error:  User document does not exist.');
           return;
         }
 
@@ -87,6 +88,7 @@ const ChatScreen = () => {
                   id: convoSnap.id,
                   participants,
                   product: productDescription,
+                  productId: convoData.product, // Store the product ID
                 } as TranslatedConversation;
               }
               return null;
@@ -100,7 +102,7 @@ const ChatScreen = () => {
         setConversations(fetchedConversations.filter(Boolean) as TranslatedConversation[]);
       } catch (error) {
         console.error('Error fetching conversations:', error);
-        Alert.alert('Error', 'Failed to fetch conversations. Please try again later.');
+        alert('Error:  Failed to fetch conversations. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -109,22 +111,58 @@ const ChatScreen = () => {
     fetchConversations();
   }, []);
 
-  const renderConversation = ({ item }: { item: TranslatedConversation }) => (
-    <TouchableOpacity
-      style={styles.conversationCard}
-      onPress={() =>
-        router.push({
-          pathname: '/hidden/displayConversation',
-          params: { id: item.id },
-        })
+  const handleMarkAsSold = async (productId: string, buyerName: string) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('Error:  You must be logged in to mark a post as sold.');
+        return;
       }
-    >
-      <Text style={styles.productText}>Product: {item.product}</Text>
-      <Text style={styles.participantsText}>
-        Participants: {item.participants.join(', ')}
-      </Text>
-    </TouchableOpacity>
-  );
+
+      // Update the post status
+      const postRef = doc(db, 'Posts', productId);
+      await updateDoc(postRef, {
+        status: `Sold to: ${buyerName}`,
+      });
+
+      alert('Success:  The post has been marked as sold to ' + buyerName + '.');
+    } catch (error) {
+      console.error('Error marking post as sold:', error);
+      alert('Error:  Failed to mark the post as sold. Please try again.');
+    }
+  };
+
+  const renderConversation = ({ item }: { item: TranslatedConversation }) => {
+    // Determine the other participant (not the current user)
+    const currentUser = auth.currentUser?.displayName || 'Unknown';
+    const otherParticipant = item.participants.find(name => name !== currentUser) || item.participants[0];
+
+    return (
+      <View style={styles.conversationCard}>
+        <TouchableOpacity
+          style={styles.conversationContent}
+          onPress={() =>
+            router.push({
+              pathname: '/hidden/displayConversation',
+              params: { id: item.id },
+            })
+          }
+        >
+          <Text style={styles.productText}>Product: {item.product}</Text>
+          <Text style={styles.participantsText}>
+            Participants: {item.participants.join(', ')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.markSoldButton}
+          onPress={() => handleMarkAsSold(item.productId, otherParticipant)}
+        >
+          <Text style={styles.buttonText}>Mark as Sold</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -176,6 +214,9 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  conversationContent: {
+    marginBottom: 10,
+  },
   productText: {
     fontSize: 16,
     fontWeight: '600',
@@ -184,6 +225,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+  },
+  markSoldButton: {
+    backgroundColor: '#FF9800', // Orange color for the button
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

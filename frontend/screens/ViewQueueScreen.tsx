@@ -122,7 +122,7 @@ const ViewQueueScreen = () => {
 
       // Update the post status
       await updateDoc(postRef, {
-        status: `Sold to: ${buyer}`,
+        // status: `Sold to: ${buyer}`,
         requesters: arrayRemove(buyer)
       });
 
