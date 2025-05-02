@@ -38,6 +38,12 @@ const DisplayConversationScreen = () => {
           return;
         }
 
+        const user = auth.currentUser;
+        if (!user) {
+          console.error('User not logged in');
+          return;
+        }
+
         const messagesRef = collection(db, 'conversations', id, 'messages');
         const messagesQuery = query(messagesRef, orderBy('timestamp'));
         const messagesSnap = await getDocs(messagesQuery);
@@ -49,9 +55,12 @@ const DisplayConversationScreen = () => {
             // Fetch the sender's name from the Accounts collection
             const accountRef = doc(db, 'Accounts', messageData.sender);
             const accountSnap = await getDoc(accountRef);
-            const senderName = accountSnap.exists()
-              ? accountSnap.data()?.name || 'Unknown'
-              : 'Unknown';
+            const senderName =
+              messageData.sender === user.uid
+                ? 'You'
+                : accountSnap.exists()
+                ? accountSnap.data()?.name || 'Unknown'
+                : 'Unknown';
 
             return {
               senderName,
@@ -92,7 +101,7 @@ const DisplayConversationScreen = () => {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
-          senderName: user.displayName || 'Anonymous',
+          senderName: 'You',
           content: newMessage,
           timestamp: new Date().toISOString(),
         },

@@ -148,10 +148,10 @@ const ChatScreen = () => {
             })
           }
         >
+          {/* Display the other participant's name as the bold text */}
+          <Text style={styles.participantNameText}>{otherParticipant}</Text>
+          {/* Display the product description as the smaller text */}
           <Text style={styles.productText}>Product: {item.product}</Text>
-          <Text style={styles.participantsText}>
-            Participants: {item.participants.join(', ')}
-          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -217,11 +217,11 @@ const styles = StyleSheet.create({
   conversationContent: {
     marginBottom: 10,
   },
-  productText: {
+  participantNameText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
-  participantsText: {
+  productText: {
     fontSize: 14,
     color: '#666',
     marginTop: 4,
