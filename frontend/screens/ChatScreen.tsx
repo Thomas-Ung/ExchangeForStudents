@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../firebaseConfig';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface Conversation {
   id: string;
@@ -68,16 +68,20 @@ const ChatScreen = () => {
                   })
                 );
 
-                // Fetch product description using batch query
-                const productRef = doc(db, 'Posts', convoData.product);
-                const productSnap = await getDoc(productRef);
-
-                let productDescription = 'Unknown Product';
-                if (productSnap.exists()) {
-                  productDescription = productSnap.data()?.description || 'Unknown Product';
-                } else {
-                  console.warn(`Post not found for ID: ${convoData.product}`);
-                }
+                // Fetch product description
+                const productDescription = await Promise.all(
+                  [convoData.product].map(async (productId) => {
+                    const productRef = doc(db, 'Posts', productId);
+                    const productSnap = await getDoc(productRef);
+                    return productSnap.exists() ? productSnap.data()?.description || 'Unknown' : 'Unknown';
+                    // if (productSnap.exists()) {
+                    //   return productSnap.data()?.description || 'Unknown Product';
+                    // } else {
+                    //   console.warn(`Post not found for ID: ${productId}`);
+                    //   return 'Unknown Product';
+                    // }
+                  })
+                ).then((descriptions) => descriptions[0]); // Extract the single description
 
                 return {
                   id: convoSnap.id,
