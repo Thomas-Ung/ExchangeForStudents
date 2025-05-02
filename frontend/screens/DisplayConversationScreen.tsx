@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { db, auth } from '../firebaseConfig';
-import { doc, collection, query, orderBy, getDocs, addDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDocs, getDoc, addDoc } from 'firebase/firestore';
 
 interface Message {
   sender: string;
@@ -18,9 +18,15 @@ interface Message {
   timestamp: string;
 }
 
+interface TranslatedMessage {
+  senderName: string;
+  content: string;
+  timestamp: string;
+}
+
 const DisplayConversationScreen = () => {
   const { id } = useLocalSearchParams(); // Get conversation ID from the route params
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<TranslatedMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
 
@@ -36,7 +42,25 @@ const DisplayConversationScreen = () => {
         const messagesQuery = query(messagesRef, orderBy('timestamp'));
         const messagesSnap = await getDocs(messagesQuery);
 
-        const fetchedMessages = messagesSnap.docs.map((doc) => doc.data() as Message);
+        const fetchedMessages = await Promise.all(
+          messagesSnap.docs.map(async (messageDoc) => {
+            const messageData = messageDoc.data() as Message;
+
+            // Fetch the sender's name from the Accounts collection
+            const accountRef = doc(db, 'Accounts', messageData.sender);
+            const accountSnap = await getDoc(accountRef);
+            const senderName = accountSnap.exists()
+              ? accountSnap.data()?.name || 'Unknown'
+              : 'Unknown';
+
+            return {
+              senderName,
+              content: messageData.content,
+              timestamp: messageData.timestamp,
+            };
+          })
+        );
+
         setMessages(fetchedMessages);
       } catch (error) {
         console.error('Error fetching messages:', error);
@@ -60,7 +84,7 @@ const DisplayConversationScreen = () => {
 
       const messagesRef = collection(db, 'conversations', id as string, 'messages');
       await addDoc(messagesRef, {
-        sender: user.displayName || 'Anonymous',
+        sender: user.uid,
         content: newMessage,
         timestamp: new Date().toISOString(),
       });
@@ -68,7 +92,7 @@ const DisplayConversationScreen = () => {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
-          sender: user.displayName || 'Anonymous',
+          senderName: user.displayName || 'Anonymous',
           content: newMessage,
           timestamp: new Date().toISOString(),
         },
@@ -79,9 +103,9 @@ const DisplayConversationScreen = () => {
     }
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
+  const renderMessage = ({ item }: { item: TranslatedMessage }) => (
     <View style={styles.messageContainer}>
-      <Text style={styles.senderText}>{item.sender}</Text>
+      <Text style={styles.senderText}>{item.senderName}</Text>
       <Text style={styles.contentText}>{item.content}</Text>
       <Text style={styles.timestampText}>{new Date(item.timestamp).toLocaleString()}</Text>
     </View>
