@@ -46,18 +46,55 @@ export default function PostScreen() {
   };
 
   const uploadPost = async () => {
+    // Validation for required fields
     if (!category) {
-      Alert.alert("Please select a category");
+      alert("Error Please select a category.");
       return;
     }
 
     if (!imageUri) {
-      Alert.alert("No image selected");
+      alert("Error: Please select an image.");
       return;
     }
 
-    if (!price || isNaN(Number(price))) {
-      Alert.alert("Invalid price", "Please enter a valid number.");
+    if (!caption.trim()) {
+      alert("Error: Please enter a caption.");
+      return;
+    }
+
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+      alert("Error: Please enter a valid price greater than 0.");
+      return;
+    }
+
+    if (!condition) {
+      alert("Error: Please select a condition.");
+      return;
+    }
+
+    // Additional validation for specific fields based on category
+    if (category === "Book" && (!specificFields.title || !specificFields.courseNumber)) {
+      alert("Error: Please fill out the title and course number for the book.");
+      return;
+    }
+
+    if (category === "Clothing" && (!specificFields.color || !specificFields.size)) {
+      alert("Error: Please fill out the color and size for the clothing.");
+      return;
+    }
+
+    if (category === "Furniture" && (!specificFields.color || !specificFields.dimensions || !specificFields.weight)) {
+      alert("Error: Please fill out the color, dimensions, and weight for the furniture.");
+      return;
+    }
+
+    if (category === "Electronic" && (!specificFields.model || !specificFields.dimensions || !specificFields.weight)) {
+      alert("Error: Please fill out the model, dimensions, and weight for the electronic item.");
+      return;
+    }
+
+    if (category === "SportsGear" && (!specificFields.type || !specificFields.weight)) {
+      alert("Error: Please fill out the type and weight for the sports gear.");
       return;
     }
 
@@ -69,7 +106,7 @@ export default function PostScreen() {
       const user = auth.currentUser;
 
       if (!user) {
-        Alert.alert("Error", "You must be logged in to upload a post.");
+        alert("Error: You must be logged in to upload a post.");
         return;
       }
 
@@ -102,7 +139,7 @@ export default function PostScreen() {
 
       if (!userSnap.exists()) {
         console.error("User document does not exist. Ensure it is created during registration.");
-        Alert.alert("Error", "User document does not exist. Please contact support.");
+        alert("Error: User document does not exist. Please contact support.");
         return;
       }
 
@@ -112,7 +149,7 @@ export default function PostScreen() {
       });
 
       // Clear the fields after a successful upload
-      Alert.alert("Post uploaded successfully!");
+      alert("Success: Post uploaded successfully!");
       setImageUri(null);
       setCaption("");
       setCondition("Good");
@@ -121,7 +158,7 @@ export default function PostScreen() {
       setSpecificFields({});
     } catch (err) {
       console.error("Error uploading post:", err);
-      Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
+      alert("Upload failed: Unknown error");
     }
   };
 
@@ -264,12 +301,14 @@ export default function PostScreen() {
       />
 
       <Text style={styles.label}>Condition:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Condition (e.g., Good, Fair, Bad)"
-        value={condition}
-        onChangeText={setCondition}
-      />
+        <Picker
+          selectedValue={condition}
+          onValueChange={(value) => setCondition(value)}
+        >
+          <Picker.Item label="Good" value="Good" />
+          <Picker.Item label="Fair" value="Fair" />
+          <Picker.Item label="Bad" value="Bad" />
+        </Picker>
 
       {renderSpecificFields()}
 
