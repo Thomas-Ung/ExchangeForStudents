@@ -5,16 +5,14 @@ import {
   TextInput,
   Button,
   Image,
-  Alert,
   StyleSheet,
-  ScrollView
+  ScrollView,
+  Alert,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, Timestamp, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebaseConfig";
-import { createPostObject } from "../domain/services/PostFactory";
+import { auth } from "../firebaseConfig";
+import { PostManager } from "../domain/managers/PostManager";
 
 export default function PostScreen() {
   const [category, setCategory] = useState<string | null>(null);
@@ -23,6 +21,7 @@ export default function PostScreen() {
   const [condition, setCondition] = useState("Good");
   const [price, setPrice] = useState("");
   const [specificFields, setSpecificFields] = useState<Record<string, any>>({});
+  const [isUploading, setIsUploading] = useState(false);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -36,120 +35,129 @@ export default function PostScreen() {
     }
   };
 
-  const uploadFile = async (localPath: string, storagePath: string): Promise<string> => {
-    const response = await fetch(localPath);
-    const blob = await response.blob();
-    const storage = getStorage();
-    const fileRef = ref(storage, storagePath);
-    await uploadBytes(fileRef, blob);
-    return await getDownloadURL(fileRef);
-  };
-
-  const uploadPost = async () => {
-    // Validation for required fields
+  const validateFields = (): boolean => {
+    // Validate common fields
     if (!category) {
-      alert("Error Please select a category.");
-      return;
+      Alert.alert("Error", "Please select a category.");
+      return false;
     }
 
     if (!imageUri) {
-      alert("Error: Please select an image.");
-      return;
+      Alert.alert("Error", "Please select an image.");
+      return false;
     }
 
     if (!caption.trim()) {
-      alert("Error: Please enter a caption.");
-      return;
+      Alert.alert("Error", "Please enter a caption.");
+      return false;
     }
 
     if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      alert("Error: Please enter a valid price greater than 0.");
-      return;
+      Alert.alert("Error", "Please enter a valid price greater than 0.");
+      return false;
     }
 
     if (!condition) {
-      alert("Error: Please select a condition.");
-      return;
+      Alert.alert("Error", "Please select a condition.");
+      return false;
     }
 
-    // Additional validation for specific fields based on category
-    if (category === "Book" && (!specificFields.title || !specificFields.courseNumber)) {
-      alert("Error: Please fill out the title and course number for the book.");
-      return;
+    // Validate category-specific fields
+    switch (category) {
+      case "Book":
+        if (!specificFields.title || !specificFields.courseNumber) {
+          Alert.alert(
+            "Error",
+            "Please fill out the title and course number for the book."
+          );
+          return false;
+        }
+        break;
+      case "Clothing":
+        if (!specificFields.color || !specificFields.size) {
+          Alert.alert(
+            "Error",
+            "Please fill out the color and size for the clothing."
+          );
+          return false;
+        }
+        break;
+      case "Furniture":
+        if (
+          !specificFields.color ||
+          !specificFields.dimensions ||
+          !specificFields.weight
+        ) {
+          Alert.alert(
+            "Error",
+            "Please fill out the color, dimensions, and weight for the furniture."
+          );
+          return false;
+        }
+        break;
+      case "Electronic":
+        if (
+          !specificFields.model ||
+          !specificFields.dimensions ||
+          !specificFields.weight
+        ) {
+          Alert.alert(
+            "Error",
+            "Please fill out the model, dimensions, and weight for the electronic item."
+          );
+          return false;
+        }
+        break;
+      case "SportsGear":
+        if (!specificFields.type || !specificFields.weight) {
+          Alert.alert(
+            "Error",
+            "Please fill out the type and weight for the sports gear."
+          );
+          return false;
+        }
+        break;
     }
 
-    if (category === "Clothing" && (!specificFields.color || !specificFields.size)) {
-      alert("Error: Please fill out the color and size for the clothing.");
-      return;
-    }
+    return true;
+  };
 
-    if (category === "Furniture" && (!specificFields.color || !specificFields.dimensions || !specificFields.weight)) {
-      alert("Error: Please fill out the color, dimensions, and weight for the furniture.");
-      return;
-    }
-
-    if (category === "Electronic" && (!specificFields.model || !specificFields.dimensions || !specificFields.weight)) {
-      alert("Error: Please fill out the model, dimensions, and weight for the electronic item.");
-      return;
-    }
-
-    if (category === "SportsGear" && (!specificFields.type || !specificFields.weight)) {
-      alert("Error: Please fill out the type and weight for the sports gear.");
-      return;
-    }
+  const uploadPost = async () => {
+    if (!validateFields()) return;
 
     try {
-      const filename = `${Date.now()}-${imageUri.substring(imageUri.lastIndexOf("/") + 1)}`;
-      const storagePath = `Posts/${filename}`;
-      const downloadURL = await uploadFile(imageUri, storagePath);
-
+      setIsUploading(true);
       const user = auth.currentUser;
 
       if (!user) {
-        alert("Error: You must be logged in to upload a post.");
+        Alert.alert("Error", "You must be logged in to upload a post.");
         return;
       }
 
       const displayName = user.displayName || "Anonymous";
 
-      const postRef = collection(db, "Posts");
+      // Upload the image using PostManager
+      const downloadURL = await PostManager.uploadImage(imageUri as string);
 
-      // Add the post to the "Posts" collection
-      const postDoc = await addDoc(postRef, {
-        category,
+      // Create the post with both common and specific fields
+      const commonFields = {
         price: parseFloat(price),
         quality: condition,
-        seller: displayName, // Use the user's display name
+        seller: displayName,
         description: caption,
         photo: downloadURL,
-        postTime: Timestamp.now(),
-        requesters: [], // Initialize with an empty array
-        status: "available", // Add the "status" field with a default value of "available"
-        ...specificFields, // Include category-specific fields
-      });
+      };
 
-      // Get the post ID
-      const postId = postDoc.id;
+      // Create the post using the PostManager
+      await PostManager.createPost(
+        user.uid,
+        category as string,
+        commonFields,
+        specificFields
+      );
 
-      // Reference to the user's document
-      const userRef = doc(db, "Accounts", user.uid);
-
-      // Check if the user's document exists
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        console.error("User document does not exist. Ensure it is created during registration.");
-        alert("Error: User document does not exist. Please contact support.");
-        return;
-      }
-
-      // Update the user's document to include the post ID in the "posts" array
-      await updateDoc(userRef, {
-        posts: arrayUnion(postId), // Add the post ID to the "posts" array
-      });
-
-      // Clear the fields after a successful upload
-      alert("Success: Post uploaded successfully!");
+      // Reset form after successful upload
+      Alert.alert("Success", "Post uploaded successfully!");
       setImageUri(null);
       setCaption("");
       setCondition("Good");
@@ -158,7 +166,9 @@ export default function PostScreen() {
       setSpecificFields({});
     } catch (err) {
       console.error("Error uploading post:", err);
-      alert("Upload failed: Unknown error");
+      Alert.alert("Error", "Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -171,13 +181,17 @@ export default function PostScreen() {
               style={styles.input}
               placeholder="Title"
               value={specificFields.title || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, title: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, title: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Course Number"
               value={specificFields.courseNumber || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, courseNumber: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, courseNumber: value })
+              }
             />
           </>
         );
@@ -188,13 +202,17 @@ export default function PostScreen() {
               style={styles.input}
               placeholder="Color"
               value={specificFields.color || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, color: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, color: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Size"
               value={specificFields.size || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, size: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, size: value })
+              }
             />
           </>
         );
@@ -205,20 +223,26 @@ export default function PostScreen() {
               style={styles.input}
               placeholder="Color"
               value={specificFields.color || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, color: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, color: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Dimensions"
               value={specificFields.dimensions || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, dimensions: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, dimensions: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Weight"
               keyboardType="numeric"
               value={specificFields.weight || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, weight: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, weight: value })
+              }
             />
           </>
         );
@@ -229,20 +253,26 @@ export default function PostScreen() {
               style={styles.input}
               placeholder="Model"
               value={specificFields.model || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, model: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, model: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Dimensions"
               value={specificFields.dimensions || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, dimensions: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, dimensions: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Weight"
               keyboardType="numeric"
               value={specificFields.weight || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, weight: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, weight: value })
+              }
             />
           </>
         );
@@ -253,14 +283,18 @@ export default function PostScreen() {
               style={styles.input}
               placeholder="Type"
               value={specificFields.type || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, type: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, type: value })
+              }
             />
             <TextInput
               style={styles.input}
               placeholder="Weight"
               keyboardType="numeric"
               value={specificFields.weight || ""}
-              onChangeText={(value) => setSpecificFields({ ...specificFields, weight: value })}
+              onChangeText={(value) =>
+                setSpecificFields({ ...specificFields, weight: value })
+              }
             />
           </>
         );
@@ -271,36 +305,39 @@ export default function PostScreen() {
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
-    <View style={styles.container}>
-      <Text style={styles.title}>Create a Post</Text>
-      <Picker selectedValue={category} onValueChange={(value) => setCategory(value)}>
-        <Picker.Item label="Select Category" value={null} />
-        <Picker.Item label="Book" value="Book" />
-        <Picker.Item label="Clothing" value="Clothing" />
-        <Picker.Item label="Furniture" value="Furniture" />
-        <Picker.Item label="Electronic" value="Electronic" />
-        <Picker.Item label="Sports Gear" value="SportsGear" />
-      </Picker>
+      <View style={styles.container}>
+        <Text style={styles.title}>Create a Post</Text>
+        <Picker
+          selectedValue={category}
+          onValueChange={(value) => setCategory(value)}
+        >
+          <Picker.Item label="Select Category" value={null} />
+          <Picker.Item label="Book" value="Book" />
+          <Picker.Item label="Clothing" value="Clothing" />
+          <Picker.Item label="Furniture" value="Furniture" />
+          <Picker.Item label="Electronic" value="Electronic" />
+          <Picker.Item label="Sports Gear" value="SportsGear" />
+        </Picker>
 
-      <Button title="Pick an image" onPress={pickImage} />
-      {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
+        <Button title="Pick an image" onPress={pickImage} />
+        {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Caption"
-        value={caption}
-        onChangeText={setCaption}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Caption"
+          value={caption}
+          onChangeText={setCaption}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Price ($)"
-        keyboardType="numeric"
-        value={price}
-        onChangeText={setPrice}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Price ($)"
+          keyboardType="numeric"
+          value={price}
+          onChangeText={setPrice}
+        />
 
-      <Text style={styles.label}>Condition:</Text>
+        <Text style={styles.label}>Condition:</Text>
         <Picker
           selectedValue={condition}
           onValueChange={(value) => setCondition(value)}
@@ -310,10 +347,14 @@ export default function PostScreen() {
           <Picker.Item label="Bad" value="Bad" />
         </Picker>
 
-      {renderSpecificFields()}
+        {renderSpecificFields()}
 
-      <Button title="Upload Post" onPress={uploadPost} />
-    </View>
+        <Button
+          title={isUploading ? "Uploading..." : "Upload Post"}
+          onPress={uploadPost}
+          disabled={isUploading}
+        />
+      </View>
     </ScrollView>
   );
 }

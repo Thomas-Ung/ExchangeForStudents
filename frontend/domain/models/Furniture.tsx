@@ -14,6 +14,16 @@ export class Furniture extends Post {
     public dimensions: string,
     public weight: number
   ) {
-    super(id, price, quality, seller, description, photo, postTime, "Furniture");
+    super(
+      id,
+      price,
+      quality,
+      seller,
+      "available",
+      description,
+      photo,
+      postTime,
+      "Furniture"
+    );
   }
 }

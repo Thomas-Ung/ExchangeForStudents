@@ -12,6 +12,16 @@ export class SportsGear extends Post {
     public type: string,
     public weight: number
   ) {
-    super(id, price, quality, seller, description, photo, postTime, "SportsGear");
+    super(
+      id,
+      price,
+      quality,
+      seller,
+      "available",
+      description,
+      photo,
+      postTime,
+      "SportsGear"
+    );
   }
 }

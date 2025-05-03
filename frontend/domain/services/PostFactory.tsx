@@ -15,9 +15,13 @@ export function createPostObject(
     description: string;
     photo: string;
     postTime: Date;
+    status?: string; // Make status optional, defaulting to "available"
   },
   specificFields: Record<string, any>
 ): Post {
+  // Use default status if not provided
+  const status = commonFields.status || "available";
+
   switch (category) {
     case "Book":
       return new Book(
@@ -28,8 +32,8 @@ export function createPostObject(
         commonFields.description,
         commonFields.photo,
         commonFields.postTime,
-        specificFields.title,
-        specificFields.courseNumber
+        specificFields.title || "",
+        specificFields.courseNumber || ""
       );
     case "Clothing":
       return new Clothing(
@@ -40,8 +44,8 @@ export function createPostObject(
         commonFields.description,
         commonFields.photo,
         commonFields.postTime,
-        specificFields.color,
-        specificFields.size
+        specificFields.color || "",
+        specificFields.size || ""
       );
     case "Furniture":
       return new Furniture(
@@ -52,9 +56,9 @@ export function createPostObject(
         commonFields.description,
         commonFields.photo,
         commonFields.postTime,
-        specificFields.color,
-        specificFields.dimensions,
-        specificFields.weight
+        specificFields.color || "",
+        specificFields.dimensions || "",
+        specificFields.weight || 0
       );
     case "Electronic":
       return new Electronic(
@@ -65,9 +69,9 @@ export function createPostObject(
         commonFields.description,
         commonFields.photo,
         commonFields.postTime,
-        specificFields.model,
-        specificFields.dimensions,
-        specificFields.weight
+        specificFields.model || "",
+        specificFields.dimensions || "",
+        specificFields.weight || 0
       );
     case "SportsGear":
       return new SportsGear(
@@ -78,10 +82,21 @@ export function createPostObject(
         commonFields.description,
         commonFields.photo,
         commonFields.postTime,
-        specificFields.type,
-        specificFields.weight
+        specificFields.type || "",
+        specificFields.weight || 0
       );
     default:
-      throw new Error(`Unknown category: ${category}`);
+      // Default case - return a basic Post
+      return new Post(
+        commonFields.id,
+        commonFields.price,
+        commonFields.quality,
+        commonFields.seller,
+        status,
+        commonFields.description,
+        commonFields.photo,
+        commonFields.postTime,
+        category
+      );
   }
 }
