@@ -22,6 +22,7 @@ interface TranslatedConversation {
   participants: string[];
   product: string;
   productId: string;
+  isSeller: boolean;
 }
 
 const ChatScreen = () => {
@@ -48,6 +49,7 @@ const ChatScreen = () => {
       }
 
       const userData = userSnap.data();
+      const userPosts = userData?.posts || []; // Get the list of post IDs from the user's account
       const conversationIds: string[] = userData?.conversations || [];
 
       const fetchedConversations = await Promise.all(
@@ -69,24 +71,25 @@ const ChatScreen = () => {
               );
 
               // Fetch product description
-              const productDescription = await Promise.all(
-                [convoData.product].map(async (productId) => {
-                  const productRef = doc(db, 'Posts', productId);
-                  const productSnap = await getDoc(productRef);
-                  if (productSnap.exists()) {
-                    return productSnap.data()?.description || 'Unknown Product';
-                  } else {
-                    console.warn(`Post not found for ID: ${productId}`);
-                    return 'Unknown Product';
-                  }
-                })
-              ).then((descriptions) => descriptions[0]); // Extract the single description
+              const productRef = doc(db, 'Posts', convoData.product);
+              const productSnap = await getDoc(productRef);
+
+              let productDescription = 'Unknown Product';
+              if (productSnap.exists()) {
+                productDescription = productSnap.data()?.description || 'Unknown Product';
+              } else {
+                console.warn(`Post not found for ID: ${convoData.product}`);
+              }
+
+              // Determine if the current user is the seller
+              const isSeller = userPosts.includes(convoData.product);
 
               return {
                 id: convoSnap.id,
                 participants,
                 product: productDescription,
                 productId: convoData.product, // Store the product ID
+                isSeller, // Include whether the current user is the seller
               } as TranslatedConversation;
             }
             return null;
@@ -132,9 +135,8 @@ const ChatScreen = () => {
   };
 
   const renderConversation = ({ item }: { item: TranslatedConversation }) => {
-    // Determine the other participant (not the current user)
-    const currentUser = auth.currentUser?.displayName || 'Unknown';
-    const otherParticipant = item.participants.find(name => name !== currentUser) || item.participants[0];
+    const otherParticipant =
+      item.participants.find((name) => name !== auth.currentUser?.displayName) || item.participants[0];
 
     return (
       <View style={styles.conversationCard}>
@@ -153,12 +155,15 @@ const ChatScreen = () => {
           <Text style={styles.productText}>Product: {item.product}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.markSoldButton}
-          onPress={() => handleMarkAsSold(item.productId, otherParticipant)}
-        >
-          <Text style={styles.buttonText}>Mark as Sold</Text>
-        </TouchableOpacity>
+        {/* Show "Mark as Sold" button only if the current user is the seller */}
+        {item.isSeller && (
+          <TouchableOpacity
+            style={styles.markSoldButton}
+            onPress={() => handleMarkAsSold(item.productId, otherParticipant)}
+          >
+            <Text style={styles.buttonText}>Mark as Sold</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
