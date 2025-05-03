@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../firebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 interface Conversation {
   id: string;
@@ -23,6 +23,7 @@ interface TranslatedConversation {
   product: string;
   productId: string;
   isSeller: boolean;
+  lastMessageTimestamp: string | null;
 }
 
 const ChatScreen = () => {
@@ -84,12 +85,23 @@ const ChatScreen = () => {
               // Determine if the current user is the seller
               const isSeller = userPosts.includes(convoData.product);
 
+              // Fetch the most recent message timestamp
+              const messagesRef = collection(db, 'conversations', id, 'messages');
+              const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+              const messagesSnap = await getDocs(messagesQuery);
+
+              let lastMessageTimestamp = null;
+              if (!messagesSnap.empty) {
+                lastMessageTimestamp = messagesSnap.docs[0].data()?.timestamp || null;
+              }
+
               return {
                 id: convoSnap.id,
                 participants,
                 product: productDescription,
                 productId: convoData.product, // Store the product ID
                 isSeller, // Include whether the current user is the seller
+                lastMessageTimestamp, // Store the timestamp of the most recent message
               } as TranslatedConversation;
             }
             return null;
@@ -100,7 +112,16 @@ const ChatScreen = () => {
         })
       );
 
-      setConversations(fetchedConversations.filter(Boolean) as TranslatedConversation[]);
+      // Sort conversations by the most recent message timestamp
+      const sortedConversations = fetchedConversations
+        .filter(Boolean)
+        .sort((a, b) => {
+          const timestampA = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
+          const timestampB = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
+          return timestampB - timestampA; // Sort in descending order
+        });
+
+      setConversations(sortedConversations as TranslatedConversation[]);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       alert('Error: Failed to fetch conversations. Please try again later.');
