@@ -30,54 +30,54 @@ const DisplayConversationScreen = () => {
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        if (typeof id !== 'string') {
-          console.error('Invalid conversation ID');
-          return;
-        }
-
-        const user = auth.currentUser;
-        if (!user) {
-          console.error('User not logged in');
-          return;
-        }
-
-        const messagesRef = collection(db, 'conversations', id, 'messages');
-        const messagesQuery = query(messagesRef, orderBy('timestamp'));
-        const messagesSnap = await getDocs(messagesQuery);
-
-        const fetchedMessages = await Promise.all(
-          messagesSnap.docs.map(async (messageDoc) => {
-            const messageData = messageDoc.data() as Message;
-
-            // Fetch the sender's name from the Accounts collection
-            const accountRef = doc(db, 'Accounts', messageData.sender);
-            const accountSnap = await getDoc(accountRef);
-            const senderName =
-              messageData.sender === user.uid
-                ? 'You'
-                : accountSnap.exists()
-                ? accountSnap.data()?.name || 'Unknown'
-                : 'Unknown';
-
-            return {
-              senderName,
-              content: messageData.content,
-              timestamp: messageData.timestamp,
-            };
-          })
-        );
-
-        setMessages(fetchedMessages);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      } finally {
-        setLoading(false);
+  const fetchMessages = async () => {
+    try {
+      if (typeof id !== 'string') {
+        console.error('Invalid conversation ID');
+        return;
       }
-    };
 
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('User not logged in');
+        return;
+      }
+
+      const messagesRef = collection(db, 'conversations', id, 'messages');
+      const messagesQuery = query(messagesRef, orderBy('timestamp'));
+      const messagesSnap = await getDocs(messagesQuery);
+
+      const fetchedMessages = await Promise.all(
+        messagesSnap.docs.map(async (messageDoc) => {
+          const messageData = messageDoc.data() as Message;
+
+          // Fetch the sender's name from the Accounts collection
+          const accountRef = doc(db, 'Accounts', messageData.sender);
+          const accountSnap = await getDoc(accountRef);
+          const senderName =
+            messageData.sender === user.uid
+              ? 'You'
+              : accountSnap.exists()
+              ? accountSnap.data()?.name || 'Unknown'
+              : 'Unknown';
+
+          return {
+            senderName,
+            content: messageData.content,
+            timestamp: messageData.timestamp,
+          };
+        })
+      );
+
+      setMessages(fetchedMessages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchMessages();
   }, [id]);
 
@@ -130,6 +130,9 @@ const DisplayConversationScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.refreshButton} onPress={fetchMessages}>
+        <Text style={styles.refreshButtonText}>Refresh</Text>
+      </TouchableOpacity>
       <FlatList
         data={messages}
         keyExtractor={(item, index) => index.toString()}
@@ -205,6 +208,19 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  refreshButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

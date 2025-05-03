@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../firebaseConfig';
@@ -30,84 +29,84 @@ const ChatScreen = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const user = auth.currentUser;
+  const fetchConversations = async () => {
+    try {
+      setLoading(true); // Show loading indicator while fetching data
+      const user = auth.currentUser;
 
-        if (!user) {
-          alert('Error:  You must be logged in to view your conversations.');
-          return;
-        }
-
-        const userRef = doc(db, 'Accounts', user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          alert('Error:  User document does not exist.');
-          return;
-        }
-
-        const userData = userSnap.data();
-        const conversationIds: string[] = userData?.conversations || [];
-
-        const fetchedConversations = await Promise.all(
-          conversationIds.map(async (id) => {
-            try {
-              const convoRef = doc(db, 'conversations', id);
-              const convoSnap = await getDoc(convoRef);
-
-              if (convoSnap.exists()) {
-                const convoData = convoSnap.data() as Conversation;
-
-                // Translate participants to names
-                const participants = await Promise.all(
-                  convoData.participants.map(async (participantId) => {
-                    const accountRef = doc(db, 'Accounts', participantId);
-                    const accountSnap = await getDoc(accountRef);
-                    return accountSnap.exists() ? accountSnap.data()?.name || 'Unknown' : 'Unknown';
-                  })
-                );
-
-                // Fetch product description
-                const productDescription = await Promise.all(
-                  [convoData.product].map(async (productId) => {
-                    const productRef = doc(db, 'Posts', productId);
-                    const productSnap = await getDoc(productRef);
-                    //return productSnap.exists() ? productSnap.data()?.description || 'Unknown' : 'Unknown';
-                    if (productSnap.exists()) {
-                      return productSnap.data()?.description || 'Unknown Product';
-                    } else {
-                      console.warn(`Post not found for ID: ${productId}`);
-                      return 'Unknown Product';
-                    }
-                  })
-                ).then((descriptions) => descriptions[0]); // Extract the single description
-
-                return {
-                  id: convoSnap.id,
-                  participants,
-                  product: productDescription,
-                  productId: convoData.product, // Store the product ID
-                } as TranslatedConversation;
-              }
-              return null;
-            } catch (error) {
-              console.error(`Error fetching conversation with ID ${id}:`, error);
-              return null;
-            }
-          })
-        );
-
-        setConversations(fetchedConversations.filter(Boolean) as TranslatedConversation[]);
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
-        alert('Error:  Failed to fetch conversations. Please try again later.');
-      } finally {
-        setLoading(false);
+      if (!user) {
+        alert('Error: You must be logged in to view your conversations.');
+        return;
       }
-    };
 
+      const userRef = doc(db, 'Accounts', user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        alert('Error: User document does not exist.');
+        return;
+      }
+
+      const userData = userSnap.data();
+      const conversationIds: string[] = userData?.conversations || [];
+
+      const fetchedConversations = await Promise.all(
+        conversationIds.map(async (id) => {
+          try {
+            const convoRef = doc(db, 'conversations', id);
+            const convoSnap = await getDoc(convoRef);
+
+            if (convoSnap.exists()) {
+              const convoData = convoSnap.data() as Conversation;
+
+              // Translate participants to names
+              const participants = await Promise.all(
+                convoData.participants.map(async (participantId) => {
+                  const accountRef = doc(db, 'Accounts', participantId);
+                  const accountSnap = await getDoc(accountRef);
+                  return accountSnap.exists() ? accountSnap.data()?.name || 'Unknown' : 'Unknown';
+                })
+              );
+
+              // Fetch product description
+              const productDescription = await Promise.all(
+                [convoData.product].map(async (productId) => {
+                  const productRef = doc(db, 'Posts', productId);
+                  const productSnap = await getDoc(productRef);
+                  if (productSnap.exists()) {
+                    return productSnap.data()?.description || 'Unknown Product';
+                  } else {
+                    console.warn(`Post not found for ID: ${productId}`);
+                    return 'Unknown Product';
+                  }
+                })
+              ).then((descriptions) => descriptions[0]); // Extract the single description
+
+              return {
+                id: convoSnap.id,
+                participants,
+                product: productDescription,
+                productId: convoData.product, // Store the product ID
+              } as TranslatedConversation;
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error fetching conversation with ID ${id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      setConversations(fetchedConversations.filter(Boolean) as TranslatedConversation[]);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      alert('Error: Failed to fetch conversations. Please try again later.');
+    } finally {
+      setLoading(false); // Stop loading in all cases
+    }
+  };
+
+  useEffect(() => {
     fetchConversations();
   }, []);
 
@@ -115,7 +114,7 @@ const ChatScreen = () => {
     try {
       const user = auth.currentUser;
       if (!user) {
-        alert('Error:  You must be logged in to mark a post as sold.');
+        alert('Error: You must be logged in to mark a post as sold.');
         return;
       }
 
@@ -125,10 +124,10 @@ const ChatScreen = () => {
         status: `Sold to: ${buyerName}`,
       });
 
-      alert('Success:  The post has been marked as sold to ' + buyerName + '.');
+      alert('Success: The post has been marked as sold to ' + buyerName + '.');
     } catch (error) {
       console.error('Error marking post as sold:', error);
-      alert('Error:  Failed to mark the post as sold. Please try again.');
+      alert('Error: Failed to mark the post as sold. Please try again.');
     }
   };
 
@@ -175,6 +174,9 @@ const ChatScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>My Conversations</Text>
+      <TouchableOpacity style={styles.refreshButton} onPress={fetchConversations}>
+        <Text style={styles.refreshButtonText}>Refresh</Text>
+      </TouchableOpacity>
       {conversations.length === 0 ? (
         <Text>No conversations found.</Text>
       ) : (
@@ -235,6 +237,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+  refreshButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
   loadingContainer: {
