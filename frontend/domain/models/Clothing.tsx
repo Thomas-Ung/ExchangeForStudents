@@ -13,6 +13,16 @@ export class Clothing extends Post {
     public color: string,
     public size: string
   ) {
-    super(id, price, quality, seller, description, photo, postTime, "Clothing");
+    super(
+      id,
+      price,
+      quality,
+      seller,
+      "available",
+      description,
+      photo,
+      postTime,
+      "Clothing"
+    );
   }
 }
