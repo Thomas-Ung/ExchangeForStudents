@@ -24,6 +24,7 @@ interface TranslatedConversation {
   productId: string;
   isSeller: boolean;
   lastMessageTimestamp: string | null;
+  isSold: boolean; // Add this to track sold status
 }
 
 const ChatScreen = () => {
@@ -76,8 +77,11 @@ const ChatScreen = () => {
               const productSnap = await getDoc(productRef);
 
               let productDescription = 'Unknown Product';
+              let isSold = false;
               if (productSnap.exists()) {
                 productDescription = productSnap.data()?.description || 'Unknown Product';
+                // Check if the product status indicates it's sold
+                isSold = productSnap.data()?.status?.startsWith('Sold to: ') || false;
               } else {
                 console.warn(`Post not found for ID: ${convoData.product}`);
               }
@@ -102,6 +106,7 @@ const ChatScreen = () => {
                 productId: convoData.product, // Store the product ID
                 isSeller, // Include whether the current user is the seller
                 lastMessageTimestamp, // Store the timestamp of the most recent message
+                isSold, // Include the sold status
               } as TranslatedConversation;
             }
             return null;
@@ -116,8 +121,8 @@ const ChatScreen = () => {
       const sortedConversations = fetchedConversations
         .filter(Boolean)
         .sort((a, b) => {
-          const timestampA = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
-          const timestampB = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
+          const timestampA = a?.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
+          const timestampB = b && b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
           return timestampB - timestampA; // Sort in descending order
         });
 
@@ -148,6 +153,15 @@ const ChatScreen = () => {
         status: `Sold to: ${buyerName}`,
       });
 
+      // Update local state to reflect the change immediately
+      setConversations(prevConversations => 
+        prevConversations.map(convo => 
+          convo.productId === productId 
+            ? {...convo, isSold: true} 
+            : convo
+        )
+      );
+
       alert('Success: The post has been marked as sold to ' + buyerName + '.');
     } catch (error) {
       console.error('Error marking post as sold:', error);
@@ -170,19 +184,24 @@ const ChatScreen = () => {
             })
           }
         >
-          {/* Display the other participant's name as the bold text */}
           <Text style={styles.participantNameText}>{otherParticipant}</Text>
-          {/* Display the product description as the smaller text */}
           <Text style={styles.productText}>Product: {item.product}</Text>
+          {item.isSold && <Text style={styles.soldText}>Sold</Text>}
         </TouchableOpacity>
 
-        {/* Show "Mark as Sold" button only if the current user is the seller */}
+        {/* Show "Mark as Sold" button only if the current user is the seller and item isn't sold */}
         {item.isSeller && (
           <TouchableOpacity
-            style={styles.markSoldButton}
-            onPress={() => handleMarkAsSold(item.productId, otherParticipant)}
+            style={[
+              styles.markSoldButton,
+              item.isSold && styles.disabledButton
+            ]}
+            disabled={item.isSold}
+            onPress={() => !item.isSold && handleMarkAsSold(item.productId, otherParticipant)}
           >
-            <Text style={styles.buttonText}>Mark as Sold</Text>
+            <Text style={styles.buttonText}>
+              {item.isSold ? 'Marked as Sold' : 'Mark as Sold'}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -254,12 +273,22 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  soldText: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginTop: 4,
+  },
   markSoldButton: {
     backgroundColor: '#FF9800', // Orange color for the button
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
     alignSelf: 'flex-start',
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    opacity: 0.7,
   },
   buttonText: {
     color: '#fff',
