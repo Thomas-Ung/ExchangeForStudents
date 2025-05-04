@@ -176,7 +176,7 @@ const BrowseScreen = ({ category }: { category?: string }) => {
       filtered = filtered.filter((product) => {
         for (const [key, value] of Object.entries(activeFilters)) {
           // Check each active filter
-          const productValue = product[key];
+          const productValue = product[key as keyof typeof product];
           if (
             !productValue ||
             String(productValue).toLowerCase() !== value.toLowerCase()
