@@ -129,53 +129,77 @@ const ViewPosts = () => {
   };
   
 
-  const renderPost = ({ item }: any) => (
-    <View style={styles.postCard}>
-      <Image
-        source={{ uri: item.photo }}
-        style={styles.postImage}
-        resizeMode="cover"
-      />
-      <Text style={styles.postTitle}>{item.description || 'Untitled Post'}</Text>
-      <Text style={styles.postStatus}>Current Status: {statuses[item.id]}</Text>
-      <Picker
-        selectedValue={statuses[item.id]}
-        onValueChange={(value) => updateStatus(item.id, value)}
-        style={styles.picker}
-      >
-        <Picker.Item label="Available" value="available" />
-        <Picker.Item label="On Hold" value="on hold" />
-      </Picker>
-      <TouchableOpacity
-        style={styles.viewBuyersButton}
-        onPress={() => router.push(`/hidden/ViewQueue?postId=${item.id}`)}
-      >
-        <Text style={styles.viewBuyersButtonText}>View Interested Buyers</Text>
-      </TouchableOpacity>
-
-      {/* Edit Button */}
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => {
-          router.push({
-            pathname: '/hidden/edit',
-            params: { id: item.id },
-          });
-          console.log('Navigating to EditScreen with ID:', item.id);
-        }} // Navigate to an edit screen
-      >
-        <Text style={styles.editButtonText}>Edit</Text>
-      </TouchableOpacity>
-
-      {/* Delete Button */}
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeletePost(item.id)} // Call the delete function
-      >
-        <Text style={styles.deleteButtonText}>Delete</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderPost = ({ item }: any) => {
+    const isSold = statuses[item.id]?.startsWith('Sold to: ');
+    
+    return (
+      <View style={styles.postCard}>
+        <Image
+          source={{ uri: item.photo }}
+          style={styles.postImage}
+          resizeMode="cover"
+        />
+        <Text style={styles.postTitle}>{item.description || 'Untitled Post'}</Text>
+        <Text style={styles.postStatus}>
+          Current Status: {statuses[item.id]}
+        </Text>
+        
+        {isSold ? (
+          // Display disabled status for sold items
+          <View style={styles.soldStatusContainer}>
+            <Text style={styles.soldStatusText}>
+              This item has been sold and status cannot be changed
+            </Text>
+          </View>
+        ) : (
+          // Normal picker for unsold items
+          <Picker
+            selectedValue={statuses[item.id]}
+            onValueChange={(value) => updateStatus(item.id, value)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Available" value="available" />
+            <Picker.Item label="On Hold" value="on hold" />
+          </Picker>
+        )}
+        
+        <TouchableOpacity
+          style={styles.viewBuyersButton}
+          onPress={() => router.push(`/hidden/ViewQueue?postId=${item.id}`)}
+        >
+          <Text style={styles.viewBuyersButtonText}>View Interested Buyers</Text>
+        </TouchableOpacity>
+  
+        {/* Edit Button */}
+        <TouchableOpacity
+          style={[
+            styles.editButton,
+            isSold && styles.disabledButton
+          ]}
+          disabled={isSold}
+          onPress={() => {
+            if (!isSold) {
+              router.push({
+                pathname: '/hidden/edit',
+                params: { id: item.id },
+              });
+              console.log('Navigating to EditScreen with ID:', item.id);
+            }
+          }}
+        >
+          <Text style={styles.editButtonText}>Edit</Text>
+        </TouchableOpacity>
+  
+        {/* Delete Button */}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeletePost(item.id)}
+        >
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -298,6 +322,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  soldStatusContainer: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  soldStatusText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#A9A9A9',
   },
 });
 
