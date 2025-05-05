@@ -17,11 +17,11 @@ import { onAuthStateChanged } from "firebase/auth";
 import { PostManager } from "../domain/managers/PostManager";
 
 const CATEGORY_FILTERS = {
-  Book: ["title", "courseNumber", "condition"],
-  Clothing: ["size", "color", "condition"],
-  Furniture: ["color", "dimensions", "weight", "condition"],
-  Electronic: ["model", "dimensions", "weight", "condition"],
-  SportsGear: ["type", "weight", "condition"],
+  Book: ["title", "courseNumber", "quality"],
+  Clothing: ["size", "color", "quality"],
+  Furniture: ["color", "dimensions", "weight", "quality"],
+  Electronic: ["model", "dimensions", "weight", "quality"],
+  SportsGear: ["type", "weight", "quality"],
 };
 
 const BrowseScreen = ({ category }: { category?: string }) => {

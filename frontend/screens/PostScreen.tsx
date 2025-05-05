@@ -337,11 +337,12 @@ export default function PostScreen() {
           onChangeText={setPrice}
         />
 
-        <Text style={styles.label}>Condition:</Text>
+        <Text style={styles.label}>Quality:</Text>
         <Picker
           selectedValue={condition}
           onValueChange={(value) => setCondition(value)}
         >
+          <Picker.Item label="Great" value="Great" />
           <Picker.Item label="Good" value="Good" />
           <Picker.Item label="Fair" value="Fair" />
           <Picker.Item label="Bad" value="Bad" />
