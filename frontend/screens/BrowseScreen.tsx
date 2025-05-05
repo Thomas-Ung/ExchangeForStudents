@@ -98,11 +98,21 @@ const BrowseScreen = ({ category }: { category?: string }) => {
       category &&
       CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS]
     ) {
-      // Return category-specific filters + common filters
-      return [
-        ...CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS],
-        ...COMMON_FILTERS,
-      ];
+      // Get category-specific filters
+      const categoryFilters =
+        CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS];
+
+      // Combine with common filters but remove duplicates
+      const combinedFilters = [...categoryFilters];
+
+      // Only add common filters if they don't already exist in category filters
+      COMMON_FILTERS.forEach((commonFilter) => {
+        if (!combinedFilters.includes(commonFilter)) {
+          combinedFilters.push(commonFilter);
+        }
+      });
+
+      return combinedFilters;
     }
     // Just show common filters on main screen
     return COMMON_FILTERS;
