@@ -2,18 +2,20 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { auth, db } from '../firebaseConfig';
 import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { sharedStyles, gradientColors } from './theme';
 
 const InterestedPosts = () => {
-  const [posts, setPosts] = useState<{ id: string; title?: string; status?: string }[]>([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const previousStatusesRef = useRef<{ [key: string]: string }>({}); // useRef instead of useState
+  const previousStatusesRef = useRef<{ [key: string]: string }>({});
 
   const fetchInterestedPosts = useCallback(async () => {
     try {
@@ -21,184 +23,90 @@ const InterestedPosts = () => {
       const user = auth.currentUser;
 
       if (!user) {
-        alert('Error: You must be logged in to view your interested posts.');
-        console.log('No user is logged in.');
+        alert('You must be logged in to view your interested posts.');
         setLoading(false);
         return;
       }
-
-      console.log('Fetching interested posts for user:', user.uid);
 
       const userRef = doc(db, 'Accounts', user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        alert('Error: User document does not exist.');
-        console.log('User document does not exist in the Accounts collection.');
+        alert('User document does not exist.');
         setPosts([]);
         setLoading(false);
         return;
       }
 
-      const userData = userSnap.data();
-      const postIds = userData.interested || [];
-      console.log('Post IDs from interested field:', postIds);
-
-      if (postIds.length === 0) {
-        console.log('No interested posts found for this user.');
-        setPosts([]);
-        setLoading(false);
-        return;
-      }
-
-      const chunkedPostIds = [];
+      const postIds = userSnap.data()?.interested || [];
+      const chunkedIds = [];
       for (let i = 0; i < postIds.length; i += 10) {
-        chunkedPostIds.push(postIds.slice(i, i + 10));
+        chunkedIds.push(postIds.slice(i, i + 10));
       }
 
       const fetchedPosts: any[] = [];
-
-      for (const chunk of chunkedPostIds) {
-        const postsRef = collection(db, 'Posts');
-        const q = query(postsRef, where('__name__', 'in', chunk));
+      for (const chunk of chunkedIds) {
+        const q = query(collection(db, 'Posts'), where('__name__', 'in', chunk));
         const querySnapshot = await getDocs(q);
-
-        querySnapshot.docs.forEach((doc) => {
-          fetchedPosts.push({
-            id: doc.id,
-            ...(doc.data() as { title?: string; status?: string; description?: string; photo?: string }),
-          });
+        querySnapshot.forEach((doc) => {
+          fetchedPosts.push({ id: doc.id, ...doc.data() });
         });
       }
 
-      console.log('Fetched posts:', fetchedPosts);
-
-      const newStatuses: { [key: string]: string } = {};
-      const currentUser = auth.currentUser?.displayName || 'You';
-
-      fetchedPosts.forEach((post) => {
-        const previousStatus = previousStatusesRef.current[post.id];
-
-        if (previousStatus && previousStatus !== post.status) {
-          alert(
-            `The status of the post "${post.description || 'Untitled Post'}" has changed to: ${post.status}`
-          );
-        }
-
-        if (post.status === `Sold to: ${currentUser}`) {
-          alert(
-            `The post "${post.description || 'Untitled Post'}" has been sold to you!`
-          );
-        }
-
-        newStatuses[post.id] = post.status || 'Unknown';
-      });
-
-      previousStatusesRef.current = newStatuses; // update ref only
       setPosts(fetchedPosts);
-    } catch (error) {
-      console.error('Error fetching interested posts:', error);
-      alert('Error: Failed to fetch interested posts. Please try again later.');
-    } finally {
+      setLoading(false);
+    } catch (err) {
+      alert('Failed to fetch posts.');
       setLoading(false);
     }
-  }, []); // empty dependency list
+  }, []);
 
   useEffect(() => {
     fetchInterestedPosts();
   }, [fetchInterestedPosts]);
 
   const renderPost = ({ item }: any) => (
-    <View style={styles.postCard}>
+    <View style={sharedStyles.card}>
       <Image
         source={{ uri: item.photo }}
-        style={styles.postImage}
-        resizeMode="cover"
+        style={{ width: '100%', height: 150, borderRadius: 8 }}
       />
-      <Text style={styles.postTitle}>{item.description || 'Untitled Post'}</Text>
-      <Text style={styles.postStatus}>Current Status: {item.status || 'Unknown'}</Text>
+      <Text style={sharedStyles.caption}>{item.description || 'Untitled Post'}</Text>
+      <Text style={{ marginVertical: 4 }}>
+        Current Status: {item.status || 'Unknown'}
+      </Text>
     </View>
   );
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Loading your interested posts...</Text>
+      <View style={sharedStyles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4f46e5" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Posts I'm Interested In</Text>
-      <TouchableOpacity style={styles.refreshButton} onPress={fetchInterestedPosts}>
-        <Text style={styles.refreshButtonText}>Refresh</Text>
-      </TouchableOpacity>
-      {posts.length === 0 ? (
-        <Text>You have not expressed interest in any posts yet.</Text>
-      ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          renderItem={renderPost}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        />
-      )}
-    </View>
+    <LinearGradient colors={gradientColors} style={{ flex: 1 }}>
+      <View style={{ padding: 16 }}>
+        <Text style={sharedStyles.title}>Posts I'm Interested In</Text>
+        <TouchableOpacity style={sharedStyles.button} onPress={fetchInterestedPosts}>
+          <Text style={sharedStyles.buttonText}>Refresh</Text>
+        </TouchableOpacity>
+        {posts.length === 0 ? (
+          <Text style={{ marginTop: 20 }}>You have not expressed interest in any posts yet.</Text>
+        ) : (
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderPost}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          />
+        )}
+      </View>
+    </LinearGradient>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  postCard: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  postImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  postTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  postStatus: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  refreshButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  refreshButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
-
 export default InterestedPosts;
+

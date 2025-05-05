@@ -1,84 +1,51 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, Button, View, Text, Alert, TouchableOpacity } from 'react-native';
+import { StyleSheet, TextInput, View, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../firebaseConfig'; // Import Firebase services
+import { auth, db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
 
-interface LoginScreenProps {
-  onAuthSuccess?: () => void; // Optional callback for successful authentication
-}
-
-export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
+export default function LoginScreen({ onAuthSuccess }: { onAuthSuccess?: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     try {
-      // Authenticate the user with Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      console.log('User authenticated:', user);
-
-      // Fetch additional user details from Firestore
-      const userRef = doc(db, 'Accounts', user.uid); // Use UID as the document ID
+      const userRef = doc(db, 'Accounts', user.uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         const userData = userSnap.data();
-        console.log('User data from Firestore:', userData);
-
-        // Optionally update the displayName in Firebase Authentication
         if (userData.name) {
           await updateProfile(user, { displayName: userData.name });
-          console.log('Display name updated to:', userData.name);
         }
-
-        alert(`Login Successful, Welcome back, ${userData.name || 'User'}!`);
-
-        // Trigger the onAuthSuccess callback if provided
-        if (onAuthSuccess) {
-          onAuthSuccess();
-        }
+        Alert.alert('Login Successful', `Welcome back, ${userData.name || 'User'}!`);
+        onAuthSuccess && onAuthSuccess();
       } else {
-        console.error('No user data found in Firestore.');
-        alert('Login Failed: No user data found. Please contact support.');
+        Alert.alert('Login Failed', 'No user data found. Please contact support.');
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      console.log(error.code)
+    } catch (error: unknown) {
+      const messages: { [key: string]: string } = {
+        'auth/user-not-found': 'No user found with this email.',
+        'auth/invalid-email': 'The email address is invalid.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/invalid-credential': 'Invalid credentials.',
+      };
 
-      // Ensure the error object has a code property
-      if (error.code) {
-        // Handle specific Firebase Authentication errors
-        switch (error.code) {
-          case 'auth/user-not-found':
-            alert('Login Failed: No user found with this email. Please register or try again.');
-            break;
-          case 'auth/invalid-email':
-            alert('Login Failed: The email address is not in the correct format.');
-            break;
-          case 'auth/wrong-password':
-            alert('Login Failed: Incorrect password. Please try again.');
-            break;
-          case 'auth/invalid-credential':
-            alert('Login Failed: The credentials provided are invalid. Please check your email and password.');
-            break;
-          default:
-            alert('Login Failed: An unknown error occurred. Please try again later.');
-            break;
-        }
+      if (typeof error === 'object' && error !== null && 'code' in error && typeof (error as any).code === 'string') {
+        const code = (error as any).code;
+        Alert.alert('Login Failed', messages[code] || 'An unknown error occurred.');
       } else {
-        // Handle unexpected errors
-        alert('Login Failed: An unexpected error occurred. Please try again later.');
+        Alert.alert('Login Failed', 'An unexpected error occurred.');
       }
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Image source={require('../assets/images/logo.png')} style={styles.logo} />
+      <Text style={styles.title}>Welcome Back</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -94,40 +61,22 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <Button title="Login" onPress={handleLogin} />
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Login</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => onAuthSuccess && onAuthSuccess()}>
-        <Text style={styles.loginText}>Don't Have an Account? Register here </Text>
+        <Text style={styles.linkText}>Don't Have an Account? Register here</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
-  loginText: {
-    marginTop: 16,
-    color: '#007BFF',
-    textAlign: 'center',
-    fontSize: 16,
-    textDecorationLine: 'underline',
-  },
+  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f0f4f8' },
+  logo: { width: 300, height: 300, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#333' },
+  input: { height: 48, borderColor: '#ccc', borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, marginBottom: 16, backgroundColor: '#fff' },
+  button: { backgroundColor: '#4f46e5', padding: 15, borderRadius: 25, alignItems: 'center' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  linkText: { marginTop: 16, color: '#4f46e5', textAlign: 'center', fontSize: 16 },
 });
