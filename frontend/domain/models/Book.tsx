@@ -13,6 +13,19 @@ export class Book extends Post {
     public title: string,
     public courseNumber: string
   ) {
-    super(id, price, quality, seller, description, photo, postTime, "Book");
+    // The Post constructor expects a status parameter that's missing
+    super(
+      id,
+      price,
+      quality,
+      seller,
+      "available",
+      description,
+      photo,
+      postTime,
+      "Book"
+    );
   }
+
+  // Add any Book-specific methods here if needed
 }

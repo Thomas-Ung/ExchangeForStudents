@@ -13,6 +13,16 @@ export class Electronic extends Post {
     public dimensions: string,
     public weight: number
   ) {
-    super(id, price, quality, seller, description, photo, postTime, "Electronic");
+    super(
+      id,
+      price,
+      quality,
+      seller,
+      "available",
+      description,
+      photo,
+      postTime,
+      "Electronic"
+    );
   }
 }
