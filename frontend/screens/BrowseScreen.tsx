@@ -24,9 +24,12 @@ const CATEGORY_FILTERS = {
   SportsGear: ["type", "weight", "quality"],
 };
 
+const COMMON_FILTERS = ["quality", "price"]; // Common filters available on all screens
+
 const BrowseScreen = ({ category }: { category?: string }) => {
   const [products, setProducts] = useState<
     {
+      price: any;
       id: string;
       photo?: string;
       description?: string;
@@ -47,48 +50,62 @@ const BrowseScreen = ({ category }: { category?: string }) => {
   const [availableFilters, setAvailableFilters] = useState<{
     [key: string]: string[];
   }>({});
+  const [minPrice, setMinPrice] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
   const router = useRouter();
 
   const extractFilterValues = (products: any[]) => {
-    if (
-      !category ||
-      !CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS]
-    ) {
-      return {};
-    }
-
-    console.log(`Extracting filters for category: ${category}`);
-    console.log(`Number of products: ${products.length}`);
-
-    const filters = CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS];
+    // Get the appropriate filters based on current view
+    const filtersToExtract = getFiltersForCurrentView().filter(
+      (f) => f !== "price"
+    );
     const filterValues: { [key: string]: string[] } = {};
 
     // Initialize each filter with an empty array
-    filters.forEach((filter) => {
+    filtersToExtract.forEach((filter) => {
       filterValues[filter] = [];
     });
 
     // Extract unique values for each filter from products
     products.forEach((product) => {
-      if (product) {
-        filters.forEach((filter) => {
-          // The field might be directly on the product object
-          const value = product[filter];
-
-          if (value !== undefined && value !== null && value !== "") {
-            const valueStr = String(value);
-            if (!filterValues[filter].includes(valueStr)) {
-              filterValues[filter].push(valueStr);
-              console.log(
-                `Added value "${valueStr}" for filter "${filter}" from product ${product.id}`
-              );
-            }
+      filtersToExtract.forEach((filter) => {
+        // Check if the property exists on the product
+        if (product[filter] !== undefined && product[filter] !== null) {
+          const value = String(product[filter]); // Convert to string for consistency
+          if (value && !filterValues[filter].includes(value)) {
+            filterValues[filter].push(value);
           }
-        });
-      }
+        }
+      });
     });
 
+    // Sort quality values in a meaningful order
+    if (filterValues["quality"]) {
+      const qualityOrder = { Great: 0, Good: 1, Fair: 2, Bad: 3 };
+      filterValues["quality"].sort((a, b) => {
+        return (
+          (qualityOrder[a as keyof typeof qualityOrder] || 999) -
+          (qualityOrder[b as keyof typeof qualityOrder] || 999)
+        );
+      });
+    }
+
     return filterValues;
+  };
+
+  const getFiltersForCurrentView = () => {
+    if (
+      category &&
+      CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS]
+    ) {
+      // Return category-specific filters + common filters
+      return [
+        ...CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS],
+        ...COMMON_FILTERS,
+      ];
+    }
+    // Just show common filters on main screen
+    return COMMON_FILTERS;
   };
 
   // Fetch products from the database
@@ -175,7 +192,21 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     if (Object.keys(activeFilters).length > 0) {
       filtered = filtered.filter((product) => {
         for (const [key, value] of Object.entries(activeFilters)) {
-          // Check each active filter
+          // Special handling for price filter
+          if (key === "price") {
+            const priceRange = JSON.parse(value);
+            const productPrice = product.price;
+
+            if (priceRange.min !== null && productPrice < priceRange.min) {
+              return false;
+            }
+            if (priceRange.max !== null && productPrice > priceRange.max) {
+              return false;
+            }
+            continue; // Skip the regular comparison for price
+          }
+
+          // Regular filter handling for other fields
           const productValue = product[key as keyof typeof product];
           if (
             !productValue ||
@@ -222,102 +253,174 @@ const BrowseScreen = ({ category }: { category?: string }) => {
           />
         </View>
 
-        {/* Add the filters UI here */}
-        {category && (
-          <View style={styles.filtersContainer}>
-            <TouchableOpacity
-              style={styles.filterToggleButton}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              <Text style={styles.filterToggleText}>
-                {showFilters ? "Hide Filters" : "Show Filters"}
-              </Text>
-            </TouchableOpacity>
+        {/* Filters section */}
+        <View style={styles.filtersContainer}>
+          <TouchableOpacity
+            style={styles.filterToggleButton}
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Text style={styles.filterToggleText}>
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </Text>
+          </TouchableOpacity>
 
-            {showFilters &&
-              CATEGORY_FILTERS[category as keyof typeof CATEGORY_FILTERS] && (
-                <View style={styles.filtersPanel}>
-                  {CATEGORY_FILTERS[
-                    category as keyof typeof CATEGORY_FILTERS
-                  ].map((filter) => (
+          {showFilters && (
+            <View style={styles.filtersPanel}>
+              {getFiltersForCurrentView().map((filter) => {
+                // Special handling for price filter
+                if (filter === "price") {
+                  return (
                     <View key={filter} style={styles.filterGroup}>
-                      <Text style={styles.filterLabel}>
-                        {filter.charAt(0).toUpperCase() + filter.slice(1)}:
-                      </Text>
-                      <View style={styles.filterOptions}>
+                      <Text style={styles.filterLabel}>Price Range:</Text>
+                      <View style={styles.priceRangeContainer}>
+                        <TextInput
+                          style={styles.priceInput}
+                          placeholder="Min $"
+                          value={minPrice}
+                          onChangeText={setMinPrice}
+                          keyboardType="numeric"
+                        />
+                        <Text style={styles.priceRangeSeparator}>to</Text>
+                        <TextInput
+                          style={styles.priceInput}
+                          placeholder="Max $"
+                          value={maxPrice}
+                          onChangeText={setMaxPrice}
+                          keyboardType="numeric"
+                        />
                         <TouchableOpacity
-                          style={[
-                            styles.filterOption,
-                            !activeFilters[filter] && styles.filterOptionActive,
-                          ]}
+                          style={styles.applyPriceButton}
                           onPress={() => {
+                            const min = minPrice ? parseFloat(minPrice) : null;
+                            const max = maxPrice ? parseFloat(maxPrice) : null;
+
+                            // Update active filters for price
                             setActiveFilters((prev) => {
                               const newFilters = { ...prev };
-                              delete newFilters[filter];
+                              if (min === null && max === null) {
+                                delete newFilters.price;
+                              } else {
+                                newFilters.price = JSON.stringify({ min, max });
+                              }
                               return newFilters;
                             });
                           }}
                         >
-                          <Text
-                            style={[
-                              styles.filterOptionText,
-                              !activeFilters[filter] && { color: "#fff" },
-                            ]}
-                          >
-                            All
-                          </Text>
+                          <Text style={styles.applyPriceButtonText}>Apply</Text>
                         </TouchableOpacity>
-
-                        {availableFilters[filter] &&
-                        availableFilters[filter].length > 0 ? (
-                          availableFilters[filter].map((value) => (
-                            <TouchableOpacity
-                              key={value}
-                              style={[
-                                styles.filterOption,
-                                activeFilters[filter] === value &&
-                                  styles.filterOptionActive,
-                              ]}
-                              onPress={() => {
-                                setActiveFilters((prev) => ({
-                                  ...prev,
-                                  [filter]: value,
-                                }));
-                              }}
-                            >
-                              <Text
-                                style={[
-                                  styles.filterOptionText,
-                                  activeFilters[filter] === value && {
-                                    color: "#fff",
-                                  },
-                                ]}
-                              >
-                                {value}
-                              </Text>
-                            </TouchableOpacity>
-                          ))
-                        ) : (
-                          <Text style={styles.noFilterValuesText}>
-                            No options available
-                          </Text>
-                        )}
                       </View>
+                      {activeFilters.price && (
+                        <View style={styles.activePriceFilter}>
+                          <Text style={styles.activePriceFilterText}>
+                            {(() => {
+                              const range = JSON.parse(activeFilters.price);
+                              if (range.min !== null && range.max !== null) {
+                                return `$${range.min} - $${range.max}`;
+                              } else if (range.min !== null) {
+                                return `$${range.min} or more`;
+                              } else if (range.max !== null) {
+                                return `Up to $${range.max}`;
+                              }
+                              return "";
+                            })()}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.removePriceFilterButton}
+                            onPress={() => {
+                              setActiveFilters((prev) => {
+                                const newFilters = { ...prev };
+                                delete newFilters.price;
+                                return newFilters;
+                              });
+                              setMinPrice("");
+                              setMaxPrice("");
+                            }}
+                          >
+                            <Text style={styles.removePriceFilterText}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
-                  ))}
+                  );
+                }
 
-                  <TouchableOpacity
-                    style={styles.clearFiltersButton}
-                    onPress={() => setActiveFilters({})}
-                  >
-                    <Text style={styles.clearFiltersText}>
-                      Clear All Filters
+                // Regular filter rendering for non-price filters
+                return (
+                  <View key={filter} style={styles.filterGroup}>
+                    <Text style={styles.filterLabel}>
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}:
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-          </View>
-        )}
+                    <View style={styles.filterOptions}>
+                      <TouchableOpacity
+                        style={[
+                          styles.filterOption,
+                          !activeFilters[filter] && styles.filterOptionActive,
+                        ]}
+                        onPress={() => {
+                          setActiveFilters((prev) => {
+                            const newFilters = { ...prev };
+                            delete newFilters[filter];
+                            return newFilters;
+                          });
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.filterOptionText,
+                            !activeFilters[filter] && { color: "#fff" },
+                          ]}
+                        >
+                          All
+                        </Text>
+                      </TouchableOpacity>
+
+                      {availableFilters[filter]?.length > 0 ? (
+                        availableFilters[filter].map((value) => (
+                          <TouchableOpacity
+                            key={value}
+                            style={[
+                              styles.filterOption,
+                              activeFilters[filter] === value &&
+                                styles.filterOptionActive,
+                            ]}
+                            onPress={() => {
+                              setActiveFilters((prev) => ({
+                                ...prev,
+                                [filter]: value,
+                              }));
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.filterOptionText,
+                                activeFilters[filter] === value && {
+                                  color: "#fff",
+                                },
+                              ]}
+                            >
+                              {value}
+                            </Text>
+                          </TouchableOpacity>
+                        ))
+                      ) : (
+                        <Text style={styles.noFilterValuesText}>
+                          No options available
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => setActiveFilters({})}
+              >
+                <Text style={styles.clearFiltersText}>Clear All Filters</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         {/* Refresh Button */}
         <TouchableOpacity style={styles.refreshButton} onPress={fetchProducts}>
@@ -472,6 +575,54 @@ const styles = StyleSheet.create({
     color: "#888",
     fontStyle: "italic",
   },
+  priceRangeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  priceInput: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 4,
+    padding: 8,
+    width: 80,
+    fontSize: 14,
+  },
+  priceRangeSeparator: {
+    marginHorizontal: 8,
+    color: "#666",
+  },
+  applyPriceButton: {
+    backgroundColor: "#007bff",
+    padding: 8,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  applyPriceButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  activePriceFilter: {
+    backgroundColor: "#e6f2ff",
+    borderRadius: 4,
+    padding: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  activePriceFilterText: {
+    color: "#007bff",
+    fontSize: 14,
+  },
+  removePriceFilterButton: {
+    padding: 4,
+  },
+  removePriceFilterText: {
+    color: "#666",
+    fontSize: 14,
+  },
   grid: {
     paddingHorizontal: 12,
   },
@@ -504,6 +655,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  debugButton: {
+    marginTop: 8,
+    backgroundColor: "#6c757d",
+    padding: 8,
+    borderRadius: 4,
+    alignItems: "center",
+    alignSelf: "center",
+  },
+  debugButtonText: {
+    color: "#fff",
+    fontSize: 12,
   },
 });
 
