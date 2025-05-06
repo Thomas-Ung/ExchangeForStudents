@@ -21,63 +21,60 @@ export class PostManager {
    */
   static async fetchPostsByCategory(category?: string): Promise<Post[]> {
     try {
-      const postRef = collection(db, "Posts");
-      const postsQuery = category
-        ? query(postRef, where("category", "==", category))
-        : postRef;
-      const querySnapshot = await getDocs(postsQuery);
+      console.log(
+        "PostManager: Starting fetch for category:",
+        category || "all"
+      );
 
+      // Try multiple collection names to find the right one
+      const possibleCollections = [
+        "posts",
+        "Posts",
+        "products",
+        "Products",
+        "items",
+        "Items",
+      ];
+
+      // First, find the correct collection
+      let foundCollection = "";
+      for (const collectionName of possibleCollections) {
+        console.log(`Trying collection: "${collectionName}"`);
+        const testSnapshot = await getDocs(collection(db, collectionName));
+
+        if (testSnapshot.size > 0) {
+          console.log(
+            `Success! Found ${testSnapshot.size} documents in "${collectionName}"`
+          );
+          foundCollection = collectionName;
+          break;
+        }
+      }
+
+      if (foundCollection === "") {
+        console.error("No documents found in any collection.");
+        return [];
+      }
+
+      // Now, query with the category filter if needed
+      const collectionRef = collection(db, foundCollection);
+      let querySnapshot;
+
+      if (category) {
+        console.log(`Applying category filter: "${category}"`);
+        const q = query(collectionRef, where("category", "==", category));
+        querySnapshot = await getDocs(q);
+      } else {
+        querySnapshot = await getDocs(collectionRef);
+      }
+
+      console.log(
+        `Query returned ${querySnapshot.size} documents after category filtering`
+      );
+
+      // Process the documents
       return querySnapshot.docs.map((doc) => {
         const data = doc.data();
-
-        // Get common fields
-        const commonFields = {
-          id: doc.id,
-          price: data.price || 0,
-          quality: data.quality || "",
-          seller: data.seller || "",
-          description: data.description || "",
-          photo: data.photo || "",
-          postTime: data.postTime?.toDate() || new Date(),
-        };
-
-        // Get specific fields based on category
-        const specificFields: Record<string, any> = {};
-
-        // Collect all fields that aren't common
-        Object.keys(data).forEach((key) => {
-          if (
-            ![
-              "id",
-              "price",
-              "quality",
-              "seller",
-              "status",
-              "description",
-              "photo",
-              "postTime",
-              "category",
-              "requesters",
-            ].includes(key)
-          ) {
-            specificFields[key] = data[key];
-          }
-        });
-
-        // If there's a category, use createPostObject
-        if (data.category) {
-          try {
-            return createPostObject(
-              data.category,
-              commonFields,
-              specificFields
-            );
-          } catch (e) {
-            console.log(`Error creating ${data.category} object:`, e);
-          }
-        }
-
-        // Fallback to basic Post
         return new Post(
           doc.id,
           data.price || 0,
@@ -124,6 +121,7 @@ export class PostManager {
       quality: string;
       seller: string;
       description: string;
+      status: string;
       photo: string;
     },
     specificFields: Record<string, any>
@@ -140,7 +138,7 @@ export class PostManager {
         description: commonFields.description,
         photo: commonFields.photo,
         postTime: Timestamp.now(),
-        status: "available",
+        status: commonFields.status,
         requesters: [],
         ...specificFields, // Add category-specific fields
       });
