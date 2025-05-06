@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,17 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
-} from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { Alert } from 'react-native';
-import { db, auth } from '../firebaseConfig'; // Import Firebase services
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"; // Add this import
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { Alert } from "react-native";
+import { db, auth } from "../firebaseConfig"; // Import Firebase services
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from "firebase/firestore"; // Add this import
 
 const DisplayScreen = () => {
   const { id } = useLocalSearchParams();
@@ -23,12 +29,12 @@ const DisplayScreen = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        if (typeof id === 'string') {
-          const docRef = doc(db, 'Posts', id); // Reference the document by ID
+        if (typeof id === "string") {
+          const docRef = doc(db, "Posts", id); // Reference the document by ID
           const docSnap = await getDoc(docRef); // Fetch the document
           if (docSnap.exists()) {
             setPost({ id: docRef.id, ...docSnap.data() }); // Explicitly set the ID
-            console.log('Fetched post:', { id: docRef.id, ...docSnap.data() });
+            console.log("Fetched post:", { id: docRef.id, ...docSnap.data() });
 
             // Check if the current user is already in the requesters array
             const user = auth.currentUser;
@@ -37,11 +43,11 @@ const DisplayScreen = () => {
               setIsInterested(docSnap.data().requesters?.includes(userName));
             }
           } else {
-            console.warn('No post found with that ID.');
+            console.warn("No post found with that ID.");
           }
         }
       } catch (error) {
-        console.error('Error fetching post:', error);
+        console.error("Error fetching post:", error);
       } finally {
         setLoading(false);
       }
@@ -131,21 +137,30 @@ const DisplayScreen = () => {
               source={{ uri: post.photo }}
               style={styles.image}
               onError={(error) =>
-                console.error('Image failed to load:', error.nativeEvent.error)
+                console.error("Image failed to load:", error.nativeEvent.error)
               }
             />
           ) : (
             <Text>No Image Available</Text>
           )}
-          <Text style={styles.caption}>{post.description || 'No Description'}</Text>
-          <Text style={styles.info}>Price: ${post.price || 'N/A'}</Text>
-          <Text style={styles.info}>Condition: {post.condition || 'N/A'}</Text>
-          <Text style={styles.info}>Category: {post.category || 'N/A'}</Text>
+          <Text style={styles.caption}>
+            {post.description || "No Description"}
+          </Text>
+          <Text style={styles.info}>Price: ${post.price || "N/A"}</Text>
+          <Text style={styles.info}>Condition: {post.condition || "N/A"}</Text>
+          <Text style={styles.info}>Category: {post.category || "N/A"}</Text>
 
           {/* Dynamically render additional attributes */}
           {Object.keys(post).map((key) => {
             if (
-              !['id', 'photo', 'description', 'price', 'condition', 'category'].includes(key)
+              ![
+                "id",
+                "photo",
+                "description",
+                "price",
+                "condition",
+                "category",
+              ].includes(key)
             ) {
               const value = post[key];
 
@@ -154,7 +169,8 @@ const DisplayScreen = () => {
                 const date = new Date(value.seconds * 1000); // Convert seconds to milliseconds
                 return (
                   <Text key={key} style={styles.info}>
-                    {key.charAt(0).toUpperCase() + key.slice(1)}: {date.toLocaleString()}
+                    {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
+                    {date.toLocaleString()}
                   </Text>
                 );
               }
@@ -173,7 +189,7 @@ const DisplayScreen = () => {
           <TouchableOpacity
             style={[
               styles.interestButton,
-              { backgroundColor: isInterested ? '#ccc' : '#4CAF50' },
+              { backgroundColor: isInterested ? "#ccc" : "#4CAF50" },
             ]}
             onPress={() => {
               if (isInterested) {
@@ -184,7 +200,7 @@ const DisplayScreen = () => {
             }}
           >
             <Text style={styles.buttonText}>
-              {isInterested ? 'Remove Interest' : "I'm Interested"}
+              {isInterested ? "Remove Interest" : "I'm Interested"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -194,48 +210,48 @@ const DisplayScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f8fa' }, // soft off-white background
+  container: { flex: 1, backgroundColor: "#f5f8fa" }, // soft off-white background
   header: {
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#d0d7de',
-    backgroundColor: '#003366', // deep navy header
+    borderBottomColor: "#d0d7de",
+    backgroundColor: "#003366", // deep navy header
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff', // white header text
+    fontWeight: "600",
+    color: "#ffffff", // white header text
   },
   card: {
     margin: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#d0d7de',
+    borderColor: "#d0d7de",
   },
   image: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 8,
-    resizeMode: 'cover',
+    resizeMode: "cover",
     marginBottom: 8,
   },
   caption: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 4,
-    color: '#003366', // deep navy caption
+    color: "#003366", // deep navy caption
   },
   info: {
     fontSize: 14,
-    color: '#555555',
+    color: "#555555",
     marginBottom: 2,
   },
   interestButton: {
@@ -243,20 +259,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f8fa',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f8fa",
   },
 });
-
 
 export default DisplayScreen;
