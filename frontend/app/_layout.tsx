@@ -38,7 +38,8 @@ export default function DrawerLayout() {
         name="hidden"
         options={{
           drawerItemStyle: { display: 'none' },
-          headerShown: false, // Hides header title for hidden
+          headerShown: true, // Hides header title for hidden
+          title: '' 
         }}
       />
       <Drawer.Screen
