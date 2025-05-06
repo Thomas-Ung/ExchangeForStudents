@@ -152,23 +152,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f8fa', // soft off-white background
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 12,
+    color: '#003366', // navy header
+    textAlign: 'center',
   },
   postCard: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#d0d7de',
   },
   postImage: {
     width: '100%',
@@ -180,14 +184,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 4,
+    color: '#003366', // navy title
   },
   postStatus: {
     fontSize: 14,
-    color: '#666',
+    color: '#555555',
     marginBottom: 8,
   },
   refreshButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#003366', // deep navy button
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -195,10 +200,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refreshButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
 });
+
 
 export default InterestedPosts;

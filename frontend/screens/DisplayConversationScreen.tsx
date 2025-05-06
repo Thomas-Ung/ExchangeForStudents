@@ -113,12 +113,34 @@ const DisplayConversationScreen = () => {
   };
 
   const renderMessage = ({ item }: { item: TranslatedMessage }) => (
-    <View style={styles.messageContainer}>
-      <Text style={styles.senderText}>{item.senderName}</Text>
-      <Text style={styles.contentText}>{item.content}</Text>
-      <Text style={styles.timestampText}>{new Date(item.timestamp).toLocaleString()}</Text>
+    <View
+      style={[
+        styles.messageContainer,
+        item.senderName === 'You' ? styles.sentMessage : styles.receivedMessage,
+      ]}
+    >
+      <Text
+        style={[
+          styles.senderText,
+          item.senderName === 'You' ? styles.sentText : styles.receivedText,
+        ]}
+      >
+        {item.senderName}
+      </Text>
+      <Text
+        style={[
+          styles.contentText,
+          item.senderName === 'You' ? styles.sentText : styles.receivedText,
+        ]}
+      >
+        {item.content}
+      </Text>
+      <Text style={styles.timestampText}>
+        {new Date(item.timestamp).toLocaleString()}
+      </Text>
     </View>
   );
+  
 
   if (loading) {
     return (
@@ -157,7 +179,7 @@ const DisplayConversationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f8fa', // soft off-white background
   },
   list: {
     padding: 16,
@@ -165,8 +187,8 @@ const styles = StyleSheet.create({
   messageContainer: {
     marginBottom: 12,
     padding: 10,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
+    borderRadius: 16,
+    maxWidth: '75%',
   },
   senderText: {
     fontWeight: 'bold',
@@ -184,43 +206,60 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f8fa',
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#ccc',
+    borderTopColor: '#d0d7de',
+    backgroundColor: '#ffffff',
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderColor: '#d0d7de',
+    borderRadius: 20,
     padding: 10,
     marginRight: 8,
+    backgroundColor: '#ffffff',
   },
   sendButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#003366',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   sendButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   refreshButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#003366',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 20,
     alignSelf: 'center',
     marginBottom: 16,
   },
   refreshButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sentMessage: {
+    backgroundColor: '#003366',
+    alignSelf: 'flex-end',
+  },
+  receivedMessage: {
+    backgroundColor: '#dce6f1',
+    alignSelf: 'flex-start',
+  },
+  sentText: {
+    color: '#ffffff',
+  },
+  receivedText: {
+    color: '#003366',
   },
 });
 

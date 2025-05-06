@@ -240,18 +240,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f8fa', // soft off-white / gray-blue background
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 12,
+    color: '#003366', // deep navy header text
   },
   list: {
     paddingBottom: 40,
   },
   conversationCard: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
@@ -260,6 +261,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#d0d7de',
   },
   conversationContent: {
     marginBottom: 10,
@@ -267,10 +270,11 @@ const styles = StyleSheet.create({
   participantNameText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#003366', // deep navy name text
   },
   productText: {
     fontSize: 14,
-    color: '#666',
+    color: '#666666',
     marginTop: 4,
   },
   soldText: {
@@ -280,7 +284,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   markSoldButton: {
-    backgroundColor: '#FF9800', // Orange color for the button
+    backgroundColor: '#003366', // deep navy button
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -291,11 +295,11 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
   },
   refreshButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#003366', // deep navy refresh button
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -303,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refreshButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -311,6 +315,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f8fa',
   },
 });
 

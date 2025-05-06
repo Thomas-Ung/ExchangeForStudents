@@ -194,27 +194,31 @@ const DisplayScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#f5f8fa' }, // soft off-white background
   header: {
     padding: 16,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#d0d7de',
+    backgroundColor: '#003366', // deep navy header
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
+    color: '#ffffff', // white header text
   },
   card: {
     margin: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#d0d7de',
   },
   image: {
     width: '100%',
@@ -227,10 +231,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 4,
+    color: '#003366', // deep navy caption
   },
   info: {
     fontSize: 14,
-    color: '#555',
+    color: '#555555',
+    marginBottom: 2,
   },
   interestButton: {
     marginTop: 20,
@@ -240,7 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -248,7 +254,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f8fa',
   },
 });
+
 
 export default DisplayScreen;

@@ -364,26 +364,32 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#f5f8fa', // soft off-white background
   },
   title: {
     fontSize: 22,
+    fontWeight: '600',
     marginBottom: 10,
+    color: '#003366', // deep navy title
+    textAlign: 'center',
   },
   input: {
     marginTop: 10,
     padding: 8,
-    borderColor: "#ccc",
+    borderColor: '#d0d7de',
     borderWidth: 1,
     borderRadius: 4,
+    backgroundColor: '#ffffff',
   },
   image: {
-    width: "100%",
+    width: '100%',
     height: 250,
     marginVertical: 15,
+    borderRadius: 8,
   },
   label: {
     marginTop: 10,
-    fontWeight: "bold",
+    fontWeight: '600',
+    color: '#003366', // navy labels
   },
 });
