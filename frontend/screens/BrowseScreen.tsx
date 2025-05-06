@@ -69,15 +69,28 @@ const BrowseScreen = ({ category }: { category?: string }) => {
     // Extract unique values for each filter from products
     products.forEach((product) => {
       filtersToExtract.forEach((filter) => {
-        // Check if the property exists on the product
-        if (product[filter] !== undefined && product[filter] !== null) {
-          const value = String(product[filter]); // Convert to string for consistency
+        // IMPROVED: Case-insensitive property lookup
+        const propertyNames = Object.keys(product);
+
+        // Find the actual property name that matches our filter (case-insensitive)
+        const actualPropertyName = propertyNames.find(
+          (prop) => prop.toLowerCase() === filter.toLowerCase()
+        );
+
+        if (
+          actualPropertyName &&
+          product[actualPropertyName] !== undefined &&
+          product[actualPropertyName] !== null
+        ) {
+          const value = String(product[actualPropertyName]); // Convert to string
           if (value && !filterValues[filter].includes(value)) {
             filterValues[filter].push(value);
           }
         }
       });
     });
+
+    console.log("Extracted filter values:", filterValues); // Add this debug log
 
     // Sort quality values in a meaningful order
     if (filterValues["quality"]) {

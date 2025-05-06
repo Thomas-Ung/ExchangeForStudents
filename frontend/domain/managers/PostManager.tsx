@@ -72,10 +72,52 @@ export class PostManager {
         `Query returned ${querySnapshot.size} documents after category filtering`
       );
 
-      // Process the documents
+      // Process the documents with improved field handling
       return querySnapshot.docs.map((doc) => {
         const data = doc.data();
-        return new Post(
+
+        // Log the full document data to debug
+        console.log(`Document ${doc.id} raw data:`, JSON.stringify(data));
+
+        // List all fields in the document
+        console.log(`Document ${doc.id} fields:`, Object.keys(data));
+
+        // Check for category-specific fields
+        if (data.category) {
+          console.log(`Document ${doc.id} is category: ${data.category}`);
+
+          // Log specific fields based on category
+          switch (data.category) {
+            case "Furniture":
+              console.log(
+                `Furniture fields: color=${data.color}, dimensions=${data.dimensions}, weight=${data.weight}`
+              );
+              break;
+            case "Book":
+              console.log(
+                `Book fields: title=${data.title}, courseNumber=${data.courseNumber}`
+              );
+              break;
+            case "Clothing":
+              console.log(
+                `Clothing fields: size=${data.size}, color=${data.color}`
+              );
+              break;
+            case "Electronic":
+              console.log(
+                `Electronic fields: model=${data.model}, dimensions=${data.dimensions}`
+              );
+              break;
+            case "SportsGear":
+              console.log(
+                `SportsGear fields: type=${data.type}, weight=${data.weight}`
+              );
+              break;
+          }
+        }
+
+        // Create a Post object with the common fields
+        const post = new Post(
           doc.id,
           data.price || 0,
           data.quality || "",
@@ -86,6 +128,32 @@ export class PostManager {
           data.postTime?.toDate() || new Date(),
           data.category || ""
         );
+
+        // Add ALL additional fields to the Post object
+        Object.keys(data).forEach((key) => {
+          if (
+            ![
+              "id",
+              "price",
+              "quality",
+              "seller",
+              "status",
+              "description",
+              "photo",
+              "postTime",
+              "category",
+            ].includes(key)
+          ) {
+            // @ts-ignore - Add dynamic properties
+            post[key] = data[key];
+          }
+        });
+
+        console.log(
+          `Final Post object fields for ${doc.id}:`,
+          Object.keys(post)
+        );
+        return post;
       });
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -128,6 +196,12 @@ export class PostManager {
   ): Promise<string> {
     try {
       const postRef = collection(db, "Posts");
+
+      console.log("Creating post with category-specific fields:", {
+        category,
+        ...commonFields,
+        ...specificFields,
+      });
 
       // Create a document with all the fields
       const postDoc = await addDoc(postRef, {
