@@ -261,23 +261,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#f5f8fa", // soft off-white background
   },
   header: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 12,
+    color: "#003366", // deep navy title
+    textAlign: "center",
   },
   postCard: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#ffffff", // white card
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   postImage: {
     width: "100%",
@@ -289,33 +291,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 4,
+    color: "#003366",
   },
   postStatus: {
     fontSize: 14,
-    color: "#666",
+    color: "#555555",
     marginBottom: 8,
   },
   picker: {
     height: 50,
     width: "100%",
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#e6ecf0", // light gray-blue picker background
     borderRadius: 8,
     marginTop: 8,
   },
   viewBuyersButton: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: "#007BFF",
+    backgroundColor: "#003366", // navy button
     borderRadius: 8,
     alignItems: "center",
   },
   viewBuyersButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
   refreshButton: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#003366",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -323,48 +326,48 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refreshButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
   editButton: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: "#FFA500", // Orange color for edit
+    backgroundColor: "#FFA500", // orange for edit
     borderRadius: 8,
     alignItems: "center",
   },
   editButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
   deleteButton: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: "#FF0000", // Red color for delete
+    backgroundColor: "#FF5252", // slightly softened red for delete
     borderRadius: 8,
     alignItems: "center",
   },
   deleteButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
   soldStatusContainer: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#d0d7de", // subtle light gray-blue
     borderRadius: 8,
     alignItems: "center",
   },
   soldStatusText: {
-    color: "#666",
+    color: "#555555",
     fontSize: 14,
     fontWeight: "600",
   },
   disabledButton: {
-    backgroundColor: "#A9A9A9",
+    backgroundColor: "#A9A9A9", // gray for disabled state
   },
 });
 

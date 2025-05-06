@@ -146,57 +146,63 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f8fa', // soft off-white background
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
+    color: '#003366', // deep navy title
   },
   userName: {
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 16,
-    color: '#333',
+    color: '#003366', // navy username
   },
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
     marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#003366', // navy border around image
   },
   placeholder: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#eee',
+    backgroundColor: '#d0d7de', // light gray-blue
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   placeholderText: {
-    color: '#999',
+    color: '#666666',
     fontSize: 14,
   },
   bioInput: {
     width: '100%',
     height: 100,
-    borderColor: '#ccc',
+    borderColor: '#d0d7de',
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     textAlignVertical: 'top',
     marginTop: 16,
+    backgroundColor: '#ffffff',
   },
   viewPostsButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#003366', // deep navy button
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
     marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
   },
   viewPostsButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -206,9 +212,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
   },
   logoutButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },

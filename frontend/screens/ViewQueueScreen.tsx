@@ -230,23 +230,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#f5f8fa", // soft off-white background
   },
   header: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 12,
+    color: "#003366", // deep navy header
+    textAlign: "center",
   },
   requesterCard: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#ffffff", // white card
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -254,29 +256,30 @@ const styles = StyleSheet.create({
   requesterName: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#003366", // navy text
   },
   buttonContainer: {
     flexDirection: "row",
   },
   acceptButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#4CAF50", // green for accept
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
     marginRight: 8,
   },
   denyButton: {
-    backgroundColor: "#FF5252",
+    backgroundColor: "#FF5252", // red for deny
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontWeight: "600",
   },
   refreshButton: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#003366", // navy refresh button
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -284,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refreshButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },

@@ -24,24 +24,28 @@ export default function DrawerLayout() {
         name="index"
         options={{
           drawerItemStyle: { display: 'none' },
+          headerShown: false, // Hides header title for index
         }}
       />
       <Drawer.Screen
         name="login"
         options={{
           drawerItemStyle: { display: 'none' },
+          headerShown: false, // Hides header title for login
         }}
       />
       <Drawer.Screen
         name="hidden"
         options={{
           drawerItemStyle: { display: 'none' },
+          headerShown: false, // Hides header title for hidden
         }}
       />
       <Drawer.Screen
         name="register"
         options={{
           drawerItemStyle: { display: 'none' },
+          headerShown: false, // Hides header title for register
         }}
       />
     </Drawer>

@@ -473,21 +473,23 @@ const BrowseScreen = ({ category }: { category?: string }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#f5f8fa" }, // soft off-white/gray-blue background
   header: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: "#d0d7de",
+    backgroundColor: "#003366", // deep navy header
   },
   title: {
     fontSize: 20,
     fontWeight: "600",
     textAlign: "center",
+    color: "#ffffff", // white text in header
   },
   userInfo: {
     marginTop: 8,
     fontSize: 14,
-    color: "#555",
+    color: "#ffffff", // white text in header
     textAlign: "center",
   },
   searchBarContainer: {
@@ -495,8 +497,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   searchInput: {
-    backgroundColor: "#f0f0f0",
-    borderColor: "#ccc",
+    backgroundColor: "#ffffff",
+    borderColor: "#d0d7de",
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
@@ -505,13 +507,13 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     marginTop: 12,
-    backgroundColor: "#007bff", // Blue color
+    backgroundColor: "#003366", // deep navy
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
   },
   refreshButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -519,25 +521,25 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   filterToggleButton: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#ffffff",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#d0d7de",
   },
   filterToggleText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#444",
+    color: "#003366",
   },
   filtersPanel: {
     marginTop: 10,
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#f0f4f8",
     borderRadius: 8,
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#d0d7de",
   },
   filterGroup: {
     marginBottom: 10,
@@ -546,43 +548,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 5,
+    color: "#003366",
   },
   filterOptions: {
     flexDirection: "row",
     flexWrap: "wrap",
   },
   filterOption: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#d0d7de",
   },
   filterOptionActive: {
-    backgroundColor: "#007bff",
-    borderColor: "#0056b3",
+    backgroundColor: "#003366",
+    borderColor: "#002244",
   },
   filterOptionText: {
     fontSize: 13,
-    color: "#444",
+    color: "#003366",
   },
   clearFiltersButton: {
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#e0e6ed",
     padding: 8,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 5,
   },
   clearFiltersText: {
-    color: "#666",
+    color: "#003366",
     fontWeight: "500",
   },
   noFilterValuesText: {
     fontSize: 13,
-    color: "#888",
+    color: "#888888",
     fontStyle: "italic",
   },
   priceRangeContainer: {
@@ -591,9 +594,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   priceInput: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#d0d7de",
     borderRadius: 4,
     padding: 8,
     width: 80,
@@ -601,21 +604,21 @@ const styles = StyleSheet.create({
   },
   priceRangeSeparator: {
     marginHorizontal: 8,
-    color: "#666",
+    color: "#666666",
   },
   applyPriceButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#003366",
     padding: 8,
     borderRadius: 4,
     marginLeft: 8,
   },
   applyPriceButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 14,
     fontWeight: "500",
   },
   activePriceFilter: {
-    backgroundColor: "#e6f2ff",
+    backgroundColor: "#dce6f1",
     borderRadius: 4,
     padding: 8,
     flexDirection: "row",
@@ -623,14 +626,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   activePriceFilterText: {
-    color: "#007bff",
+    color: "#003366",
     fontSize: 14,
   },
   removePriceFilterButton: {
     padding: 4,
   },
   removePriceFilterText: {
-    color: "#666",
+    color: "#003366",
     fontSize: 14,
   },
   grid: {
@@ -639,15 +642,17 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: 8,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
     alignItems: "center",
     padding: 10,
+    borderWidth: 1,
+    borderColor: "#d0d7de",
   },
   image: {
     width: "100%",
@@ -660,11 +665,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
+    color: "#003366",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f5f8fa",
   },
   debugButton: {
     marginTop: 8,
@@ -675,7 +682,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   debugButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 12,
   },
 });

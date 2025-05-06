@@ -1,113 +1,52 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, Button, View, Text, Alert, TouchableOpacity } from 'react-native';
+import { StyleSheet, TextInput, View, Text, Alert, TouchableOpacity, Image } from 'react-native';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../firebaseConfig'; // Import Firebase services
+import { auth, db } from '../firebaseConfig';
+import { LinearGradient } from 'expo-linear-gradient';
 
-interface RegisterScreenProps {
-  onAuthSuccess?: () => void; // Optional callback for successful registration
-}
-
-export default function RegisterScreen({ onAuthSuccess }: RegisterScreenProps) {
+export default function RegisterScreen({ onAuthSuccess }: { onAuthSuccess?: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
 
   const handleRegister = async () => {
     try {
-      // Create a new user with Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      console.log('User registered:', user);
-
-      // Update the user's displayName in Firebase Authentication
       await updateProfile(user, { displayName: username });
-      console.log('Display name updated to:', username);
-
-      // Store additional user details in Firestore
-      const userRef = doc(db, 'Accounts', user.uid); // Use UID as the document ID
-      await setDoc(userRef, {
-        name: username,
-        email: email,
-        createdAt: new Date(),
-        posts: [], // Initialize with an empty array for posts
-        interested: [], // Initialize with an empty array for interested posts
-      });
-
-      console.log('User data saved to Firestore.');
-
+      const userRef = doc(db, 'Accounts', user.uid);
+      await setDoc(userRef, { name: username, email, createdAt: new Date(), posts: [], interested: [] });
       Alert.alert('Registration Successful', `Welcome, ${username}!`);
-
-      // Trigger the onAuthSuccess callback if provided
-      if (onAuthSuccess) {
-        onAuthSuccess();
-      }
-    } catch (error) {
-      console.error('Error during registration:', error);
-      Alert.alert('Registration Failed', error instanceof Error ? error.message : 'An unknown error occurred.');
+      if (onAuthSuccess) onAuthSuccess();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      Alert.alert('Registration Failed', err.message || 'Unknown error occurred.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Register" onPress={handleRegister} />
-      <TouchableOpacity onPress={() => onAuthSuccess && onAuthSuccess()}>
-        <Text style={styles.loginText}>Already have an account? Login here</Text>
+    <LinearGradient colors={['#6dd5fa', '#2980b9']} style={styles.container}>
+      <Image source={require('../assets/images/logo.png')} style={styles.logo} />
+      <TextInput style={styles.input} placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" placeholderTextColor="#888" />
+      <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#888" />
+      <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry placeholderTextColor="#888" />
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
-    </View>
+      <TouchableOpacity onPress={() => onAuthSuccess && onAuthSuccess()}>
+        <Text style={styles.linkText}>Already have an account? Login here</Text>
+      </TouchableOpacity>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
-  loginText: {
-    marginTop: 16,
-    color: '#007BFF',
-    textAlign: 'center',
-    fontSize: 16,
-    textDecorationLine: 'underline',
-  },
+  container: { flex: 1, justifyContent: 'center', padding: 20 },
+  logo: { width: 300, height: 300, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
+  input: { backgroundColor: '#fff', borderRadius: 25, padding: 12, marginBottom: 12, paddingHorizontal: 20 },
+  button: { backgroundColor: '#fff', paddingVertical: 12, borderRadius: 25, alignItems: 'center', marginTop: 10 },
+  buttonText: { color: '#2980b9', fontSize: 16, fontWeight: 'bold' },
+  linkText: { marginTop: 16, color: '#fff', textAlign: 'center', fontSize: 16, textDecorationLine: 'underline' },
 });
+
