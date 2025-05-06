@@ -12,14 +12,18 @@ import { signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router"; // Add this import
 
 export default function LoginScreen({
   onAuthSuccess,
+  onRegisterClick,
 }: {
   onAuthSuccess?: () => void;
+  onRegisterClick?: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter(); // Add router
 
   const handleLogin = async () => {
     try {
@@ -38,7 +42,13 @@ export default function LoginScreen({
         if (userData.name)
           await updateProfile(user, { displayName: userData.name });
         alert(`Welcome back, ${userData.name || "User"}!`);
-        if (onAuthSuccess) onAuthSuccess();
+
+        // Use provided callback or default navigation
+        if (onAuthSuccess) {
+          onAuthSuccess();
+        } else {
+          router.push("/tabs/browse"); // Default navigation after login
+        }
       } else {
         alert("Login Failed: No user data found.");
       }
@@ -58,6 +68,15 @@ export default function LoginScreen({
           alert("Login Failed: Invalid credentials.");
           break;
       }
+    }
+  };
+
+  // Handler for register link
+  const handleRegisterClick = () => {
+    if (onRegisterClick) {
+      onRegisterClick();
+    } else {
+      router.push("/register"); // Default navigation to register screen
     }
   };
 
@@ -87,7 +106,7 @@ export default function LoginScreen({
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onAuthSuccess && onAuthSuccess()}>
+      <TouchableOpacity onPress={handleRegisterClick}>
         <Text style={styles.linkText}>
           Don't have an account? Register here
         </Text>
