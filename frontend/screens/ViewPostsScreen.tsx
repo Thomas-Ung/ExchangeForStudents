@@ -37,7 +37,7 @@ const ViewPosts = () => {
       const user = auth.currentUser;
 
       if (!user) {
-        Alert.alert("Error", "You must be logged in to view your posts.");
+        alert("Error: You must be logged in to view your posts.");
         console.log("No user is logged in.");
         return;
       }
@@ -48,7 +48,7 @@ const ViewPosts = () => {
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        Alert.alert("Error", "User document does not exist.");
+        alert("Error: User document does not exist.");
         console.log("User document does not exist in the Accounts collection.");
         return;
       }
@@ -89,7 +89,7 @@ const ViewPosts = () => {
       setStatuses(initialStatuses);
     } catch (error) {
       console.error("Error fetching posts:", error);
-      Alert.alert("Error", "Failed to fetch posts. Please try again later.");
+      alert("Error: Failed to fetch posts. Please try again later.");
     } finally {
       setLoading(false); // Stop loading in all cases
     }
@@ -107,10 +107,10 @@ const ViewPosts = () => {
         ...prevStatuses,
         [postId]: newStatus,
       }));
-      Alert.alert("Success", `Status updated to "${newStatus}"`);
+      alert(`Success: Status updated to "${newStatus}"`);
     } catch (error) {
       console.error("Error updating status:", error);
-      Alert.alert("Error", "Failed to update status. Please try again.");
+      alert("Error: Failed to update status. Please try again.");
     }
   };
 

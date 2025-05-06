@@ -38,27 +38,27 @@ export default function PostScreen() {
   const validateFields = (): boolean => {
     // Validate common fields
     if (!category) {
-      Alert.alert("Error", "Please select a category.");
+      alert("Error: Please select a category.");
       return false;
     }
 
     if (!imageUri) {
-      Alert.alert("Error", "Please select an image.");
+      alert("Error: Please select an image.");
       return false;
     }
 
     if (!caption.trim()) {
-      Alert.alert("Error", "Please enter a caption.");
+      alert("Error: Please enter a caption.");
       return false;
     }
 
     if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      Alert.alert("Error", "Please enter a valid price greater than 0.");
+      alert("Error: Please enter a valid price greater than 0.");
       return false;
     }
 
     if (!condition) {
-      Alert.alert("Error", "Please select a condition.");
+      alert("Error: Please select a condition.");
       return false;
     }
 
@@ -66,19 +66,15 @@ export default function PostScreen() {
     switch (category) {
       case "Book":
         if (!specificFields.title || !specificFields.courseNumber) {
-          Alert.alert(
-            "Error",
-            "Please fill out the title and course number for the book."
+          alert(
+            "Error: Please fill out the title and course number for the book."
           );
           return false;
         }
         break;
       case "Clothing":
         if (!specificFields.color || !specificFields.size) {
-          Alert.alert(
-            "Error",
-            "Please fill out the color and size for the clothing."
-          );
+          alert("Error: Please fill out the color and size for the clothing.");
           return false;
         }
         break;
@@ -88,9 +84,8 @@ export default function PostScreen() {
           !specificFields.dimensions ||
           !specificFields.weight
         ) {
-          Alert.alert(
-            "Error",
-            "Please fill out the color, dimensions, and weight for the furniture."
+          alert(
+            "Error: Please fill out the color, dimensions, and weight for the furniture."
           );
           return false;
         }
@@ -101,18 +96,16 @@ export default function PostScreen() {
           !specificFields.dimensions ||
           !specificFields.weight
         ) {
-          Alert.alert(
-            "Error",
-            "Please fill out the model, dimensions, and weight for the electronic item."
+          alert(
+            "Error: Please fill out the model, dimensions, and weight for the electronic item."
           );
           return false;
         }
         break;
       case "SportsGear":
         if (!specificFields.type || !specificFields.weight) {
-          Alert.alert(
-            "Error",
-            "Please fill out the type and weight for the sports gear."
+          alert(
+            "Error: Please fill out the type and weight for the sports gear."
           );
           return false;
         }
@@ -130,7 +123,7 @@ export default function PostScreen() {
       const user = auth.currentUser;
 
       if (!user) {
-        Alert.alert("Error", "You must be logged in to upload a post.");
+        alert("Error: You must be logged in to upload a post.");
         return;
       }
 
@@ -146,6 +139,7 @@ export default function PostScreen() {
         seller: displayName,
         description: caption,
         photo: downloadURL,
+        status: status, // Add default status
       };
 
       // Create the post using the PostManager
@@ -157,7 +151,7 @@ export default function PostScreen() {
       );
 
       // Reset form after successful upload
-      Alert.alert("Success", "Post uploaded successfully!");
+      alert("Success: Post uploaded successfully!");
       setImageUri(null);
       setCaption("");
       setCondition("Good");
@@ -166,7 +160,7 @@ export default function PostScreen() {
       setSpecificFields({});
     } catch (err) {
       console.error("Error uploading post:", err);
-      Alert.alert("Error", "Upload failed. Please try again.");
+      alert("Error: Upload failed. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -364,32 +358,32 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     flex: 1,
-    backgroundColor: '#f5f8fa', // soft off-white background
+    backgroundColor: "#f5f8fa", // soft off-white background
   },
   title: {
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 10,
-    color: '#003366', // deep navy title
-    textAlign: 'center',
+    color: "#003366", // deep navy title
+    textAlign: "center",
   },
   input: {
     marginTop: 10,
     padding: 8,
-    borderColor: '#d0d7de',
+    borderColor: "#d0d7de",
     borderWidth: 1,
     borderRadius: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   image: {
-    width: '100%',
+    width: "100%",
     height: 250,
     marginVertical: 15,
     borderRadius: 8,
   },
   label: {
     marginTop: 10,
-    fontWeight: '600',
-    color: '#003366', // navy labels
+    fontWeight: "600",
+    color: "#003366", // navy labels
   },
 });

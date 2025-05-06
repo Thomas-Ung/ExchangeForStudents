@@ -61,10 +61,7 @@ const ViewQueueScreen = () => {
       setRequesters(requestersList);
     } catch (error) {
       console.error("Error fetching requesters:", error);
-      Alert.alert(
-        "Error",
-        "Failed to fetch requesters. Please try again later."
-      );
+      alert("Error: Failed to fetch requesters. Please try again later.");
     } finally {
       setLoading(false); // Stop loading in all cases
     }
@@ -82,7 +79,7 @@ const ViewQueueScreen = () => {
       const postDoc = await getDoc(postRef);
 
       if (!postDoc.exists()) {
-        Alert.alert("Error", "Post not found");
+        alert("Error: Post not found");
         return;
       }
 
@@ -173,11 +170,11 @@ const ViewQueueScreen = () => {
       });
 
       console.log("Denied", `${buyer}'s request has been denied.`);
-      Alert.alert("Denied", `${buyer}'s request has been denied.`);
+      alert(`Denied: ${buyer}'s request has been denied.`);
       fetchRequesters(); // Refresh the list after denying
     } catch (error) {
       console.error("Error denying request:", error);
-      Alert.alert("Error", "Failed to deny the request.");
+      alert("Error: Failed to deny the request.");
     }
   };
 

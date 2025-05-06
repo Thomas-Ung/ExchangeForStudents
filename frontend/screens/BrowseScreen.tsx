@@ -128,16 +128,46 @@ const BrowseScreen = ({ category }: { category?: string }) => {
       let fetchedProducts = await PostManager.fetchPostsByCategory(category);
       console.log(`Fetched ${fetchedProducts.length} products`);
 
-      // Optional: Log a sample product to debug
-      if (fetchedProducts.length > 0) {
-        console.log("Sample product data:", fetchedProducts[0]);
-      }
+      // Debug raw database response
+      console.log("DEBUG - Raw database response:");
+      fetchedProducts.forEach((product) => {
+        // Force dump the entire product object to see what's happening
+        console.log(`${product.id}:`, JSON.stringify(product));
+      });
+
+      // Log ALL products and their statuses before filtering
+      console.log("----- PRODUCTS BEFORE FILTERING -----");
+      fetchedProducts.forEach((product) => {
+        console.log(
+          `Product ID: ${product.id} | Status: "${product.status}" | Seller: "${product.seller}" | Current user: "${currentUser?.displayName}"`
+        );
+      });
 
       // Filter out sold products and products by the current user
-      const availableProducts = fetchedProducts.filter(
-        (product) =>
-          !product.status?.toLowerCase().includes("sold to") &&
-          product.seller !== currentUser?.displayName
+      const availableProducts = fetchedProducts.filter((product) => {
+        // Check if status includes "sold" - case insensitive
+        const statusLower = String(product.status || "").toLowerCase();
+        const isSold = statusLower.includes("sold");
+
+        // Check if this product belongs to current user
+        const isCurrentUserProduct =
+          product.seller === currentUser?.displayName;
+
+        // Log the decision for each product
+        console.log(
+          `FILTER CHECK - ID: ${product.id} | Status: "${
+            product.status
+          }" | isSold: ${isSold} | isCurrentUserProduct: ${isCurrentUserProduct} | DECISION: ${
+            !isSold && !isCurrentUserProduct ? "KEEP" : "FILTER OUT"
+          }`
+        );
+
+        // Include only if NOT sold AND NOT by current user
+        return !isSold && !isCurrentUserProduct;
+      });
+
+      console.log(
+        `After filtering: ${availableProducts.length} available products`
       );
 
       setProducts(availableProducts);
@@ -157,7 +187,7 @@ const BrowseScreen = ({ category }: { category?: string }) => {
   // Refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchProducts();
+    await fetchProducts(); // Use the same fetchProducts with the enhanced logging
     setRefreshing(false);
   };
 
