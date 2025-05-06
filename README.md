@@ -6,10 +6,10 @@ Exchange4Students is a campus-exclusive marketplace designed to simplify buying 
 
 
 ### Team Members & Contributions
-- **[Thomas Ung]** –  Mainly backend developer. Worked with Firebase to connect the front end. Set up a Firebase project and figured out how to store data and database management. Also worked on connecting the database with post fields, profile fields, buttons, status', etc. Ensured that the database would be updated when we made changes in the application.
-- **[Spurthi Setty]** – Mainly frontend developer. Developed main frontend logic for users to view different screens and navigate through the app from the users perspective. Ran most of the code from her computer during our working sessions and implemented majority of the user interface. Also worked on navigation logic for milestone 4 and for the new buttons and screens implemented.
-- **[Lakshya Vegiraju]** – Mainly design architecture. Worked on updating UML diagrams and working with other team members to adjust our new software system architecture. Updated UML diagrams with new classes and new code that was implemented in milestone 4. Helped with structuring the code and files. Focused efforts on planning architecture and layout of our application.
-- **[Gianna Cerbone]** – Mainly team floater. Helped on frontend development when needed and looked into how the frontend and backend need to interact to be successful. Helped with creating frontend screens like the profile screen or buttons and notifications. Provided perspective from requirements point of view and helped in prioritizing what should be implemented first. 
+- **[Thomas Ung]** –  Ensured database consistency and worked on implementing chat messaging functions. Managed backend integration with Firebase and data operations.
+- **[Spurthi Setty]** – Led frontend implementation with the database, added browsing features, updated filtering options and edit functionality, and handled disabling posts marked as sold.
+- **[Lakshya Vegiraju]** – Helped with user interface implementation, supported documentation, reports, and diagrams, and contributed to architectural planning and UML updates.
+- **[Gianna Cerbone]** – Focused on user interface improvements with style sheets, created the logo and buttons, and updated navigation bars. Also contributed to frontend development, profile screens, and notification integration.
 
 
 ## Implemented Functions ✅
@@ -23,17 +23,15 @@ Exchange4Students is a campus-exclusive marketplace designed to simplify buying 
 - [ ] Function 8 - Accept / Deny functionality made with notifications from the sellers perspective.
 - [ ] Function 9 - Status button created for sellers to place their item into either "Sold", "On Hold", or "Available". Default when posted is available.
 - [ ] Function 10 - Posts subclasses implemented with more fields like dimensions, size, color, etc.
+- [ ] Messaging and chat functions.
+- [ ] Editting profile and posts capabilities.
+- [ ] Interactive user interface.
 
 
 ## Not Implemented (Yet) ❌
 These features were not completed within the current project scope but will likely be addressed in future milestones.
 
-
-- Feature 1 – Messaging and chat functions need to be implemented still.
-- Feature 2 - Editting profile and posts capabilities.
-- Feature 3 - Viewing other users profiles.
-- Feature 4 - Add more interactive updates to User Interface.
-- Feature 5 - AI Capability? 
+- Feature 1 - AI Capability! To be done soon. 
 
 
 ### Mapping to Milestones
