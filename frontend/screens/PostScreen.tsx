@@ -22,8 +22,9 @@ export default function PostScreen() {
   const [price, setPrice] = useState("");
   const [specificFields, setSpecificFields] = useState<Record<string, any>>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
-  const pickImage = async () => {
+  const handleImageSelect = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -32,6 +33,21 @@ export default function PostScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       setImageUri(result.assets[0].uri);
+      setIsUploading(true);
+
+      try {
+        // Use the new combined method
+        const { imageUrl, caption } =
+          await PostManager.uploadImageAndGenerateCaption(result.assets[0].uri);
+
+        setUploadedImageUrl(imageUrl);
+        setCaption(caption); // Auto-populate the caption
+      } catch (error) {
+        console.error("Error:", error);
+        Alert.alert("Error", "Failed to process image");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -313,7 +329,7 @@ export default function PostScreen() {
           <Picker.Item label="Sports Gear" value="SportsGear" />
         </Picker>
 
-        <Button title="Pick an image" onPress={pickImage} />
+        <Button title="Pick an image" onPress={handleImageSelect} />
         {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
         <TextInput

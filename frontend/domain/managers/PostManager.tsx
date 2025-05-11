@@ -13,6 +13,7 @@ import { db } from "../../firebaseConfig";
 import { Post } from "../models/Post";
 import { createPostObject } from "../services/PostFactory";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { CaptionGeneratorService } from "../services/CaptionGenerator";
 
 export class PostManager {
   /**
@@ -158,6 +159,43 @@ export class PostManager {
     } catch (error) {
       console.error("Error fetching posts:", error);
       return [];
+    }
+  }
+
+  /**
+   * Generate a caption for an image URL using AI
+   */
+  static async generateCaption(imageUrl: string): Promise<string> {
+    return CaptionGeneratorService.generateCaption(imageUrl);
+  }
+
+  /**
+   * Upload an image and automatically generate a caption
+   * Convenience method that combines uploadImage and generateCaption
+   */
+  // In PostManager.tsx, update the uploadImageAndGenerateCaption method:
+
+  static async uploadImageAndGenerateCaption(localPath: string): Promise<{
+    imageUrl: string;
+    caption: string;
+  }> {
+    try {
+      // First upload the image
+      const imageUrl = await this.uploadImage(localPath);
+
+      // Add a try-catch specifically for caption generation
+      try {
+        // Then generate a caption
+        const caption = await CaptionGeneratorService.generateCaption(imageUrl);
+        return { imageUrl, caption };
+      } catch (captionError) {
+        console.error("Caption generation failed:", captionError);
+        // Return image URL but with fallback caption
+        return { imageUrl, caption: "A product for sale" };
+      }
+    } catch (error) {
+      console.error("Error in uploadImageAndGenerateCaption:", error);
+      throw error;
     }
   }
 
