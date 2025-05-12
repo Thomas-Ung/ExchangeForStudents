@@ -15,5 +15,5 @@
     ".expo/types/**/*.ts",
     "llm.js",
     "expo-env.d.ts"
-  ]
+, "domain/managers/CaptionGenerator.js"  ]
 }

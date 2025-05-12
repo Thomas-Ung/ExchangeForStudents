@@ -173,26 +173,22 @@ export class PostManager {
    * Upload an image and automatically generate a caption
    * Convenience method that combines uploadImage and generateCaption
    */
-  // In PostManager.tsx, update the uploadImageAndGenerateCaption method:
-
   static async uploadImageAndGenerateCaption(localPath: string): Promise<{
     imageUrl: string;
     caption: string;
+    category: string;
   }> {
     try {
       // First upload the image
       const imageUrl = await this.uploadImage(localPath);
 
-      // Add a try-catch specifically for caption generation
-      try {
-        // Then generate a caption
-        const caption = await CaptionGeneratorService.generateCaption(imageUrl);
-        return { imageUrl, caption };
-      } catch (captionError) {
-        console.error("Caption generation failed:", captionError);
-        // Return image URL but with fallback caption
-        return { imageUrl, caption: "A product for sale" };
-      }
+      // Generate caption and infer category in parallel for efficiency
+      const [caption, category] = await Promise.all([
+        CaptionGeneratorService.generateCaption(imageUrl),
+        CaptionGeneratorService.inferCategory(imageUrl),
+      ]);
+
+      return { imageUrl, caption, category };
     } catch (error) {
       console.error("Error in uploadImageAndGenerateCaption:", error);
       throw error;

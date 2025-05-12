@@ -37,12 +37,13 @@ export default function PostScreen() {
       setIsUploading(true);
 
       try {
-        // Use the new combined method
-        const { imageUrl, caption } =
+        // Use the updated combined method
+        const { imageUrl, caption, category } =
           await PostManager.uploadImageAndGenerateCaption(result.assets[0].uri);
 
         setUploadedImageUrl(imageUrl);
         setBio(caption); // Populate the bio field with the AI-generated caption
+        setCategory(category); // Auto-select the inferred category
       } catch (error) {
         console.error("Error:", error);
         Alert.alert("Error", "Failed to process image");
@@ -326,7 +327,7 @@ export default function PostScreen() {
 
         <Button title="Pick an image" onPress={handleImageSelect} />
         {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
-        
+
         <Picker
           selectedValue={category}
           onValueChange={(value) => setCategory(value)}
