@@ -323,6 +323,10 @@ export default function PostScreen() {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
       <View style={styles.container}>
         <Text style={styles.title}>Create a Post</Text>
+
+        <Button title="Pick an image" onPress={handleImageSelect} />
+        {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
+        
         <Picker
           selectedValue={category}
           onValueChange={(value) => setCategory(value)}
@@ -334,9 +338,6 @@ export default function PostScreen() {
           <Picker.Item label="Electronic" value="Electronic" />
           <Picker.Item label="Sports Gear" value="SportsGear" />
         </Picker>
-
-        <Button title="Pick an image" onPress={handleImageSelect} />
-        {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
         <TextInput
           style={styles.input}
