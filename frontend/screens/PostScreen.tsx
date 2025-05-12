@@ -156,6 +156,7 @@ export default function PostScreen() {
         description: caption,
         photo: downloadURL,
         status: status, // Add default status
+        bio: "Default bio", // Add a default or dynamic bio value
       };
 
       // Create the post using the PostManager

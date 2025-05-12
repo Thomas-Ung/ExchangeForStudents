@@ -4,6 +4,8 @@ module.exports = function(api) {
       presets: ['babel-preset-expo'],
       plugins: [
         '@babel/plugin-transform-export-namespace-from',
+        // Comment out or remove this plugin:
+        /*
         ['module:react-native-dotenv', {
           moduleName: '@env',
           path: '.env',
@@ -12,6 +14,7 @@ module.exports = function(api) {
           safe: false,
           allowUndefined: true
         }],
+        */
         // Other plugins...
       ]
     };
