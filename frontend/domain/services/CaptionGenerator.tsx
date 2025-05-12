@@ -28,7 +28,7 @@ export class CaptionGeneratorService {
             content: [
               {
                 type: "input_text",
-                text: "Provide a descriptive caption for this product image in approximately 30 words",
+                text: "Provide a descriptive bio for this product image in approximately 30 words",
               },
               {
                 type: "input_image",
@@ -43,7 +43,6 @@ export class CaptionGeneratorService {
       return response.output_text || "A product for sale";
     } catch (error: any) {
       console.error("Error generating caption:", error.message);
-      // Return a default caption when the API fails
       return "A product for sale";
     }
   }
