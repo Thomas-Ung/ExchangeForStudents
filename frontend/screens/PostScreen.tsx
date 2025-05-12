@@ -17,12 +17,13 @@ import { PostManager } from "../domain/managers/PostManager";
 export default function PostScreen() {
   const [category, setCategory] = useState<string | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption] = useState(""); // Keep this for manual input
   const [condition, setCondition] = useState("Good");
   const [price, setPrice] = useState("");
   const [specificFields, setSpecificFields] = useState<Record<string, any>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [bio, setBio] = useState(""); // State for bio
 
   const handleImageSelect = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -41,7 +42,7 @@ export default function PostScreen() {
           await PostManager.uploadImageAndGenerateCaption(result.assets[0].uri);
 
         setUploadedImageUrl(imageUrl);
-        setCaption(caption); // Auto-populate the caption
+        setBio(caption); // Populate the bio field with the AI-generated caption
       } catch (error) {
         console.error("Error:", error);
         Alert.alert("Error", "Failed to process image");
@@ -148,14 +149,18 @@ export default function PostScreen() {
       // Upload the image using PostManager
       const downloadURL = await PostManager.uploadImage(imageUri as string);
 
+      // Generate a bio using AI
+      const generatedBio = await PostManager.generateCaption(downloadURL);
+
       // Create the post with both common and specific fields
       const commonFields = {
         price: parseFloat(price),
         quality: condition,
         seller: displayName,
-        description: caption,
+        description: caption, // Keep the manually entered description
         photo: downloadURL,
-        status: status, // Add default status
+        status: "available", // Default status
+        bio: generatedBio, // Use the AI-generated bio
       };
 
       // Create the post using the PostManager
@@ -174,6 +179,7 @@ export default function PostScreen() {
       setPrice("");
       setCategory(null);
       setSpecificFields({});
+      setBio(""); // Reset bio
     } catch (err) {
       console.error("Error uploading post:", err);
       alert("Error: Upload failed. Please try again.");
@@ -359,6 +365,13 @@ export default function PostScreen() {
         </Picker>
 
         {renderSpecificFields()}
+
+        <TextInput
+          style={styles.input}
+          placeholder="Bio"
+          value={bio}
+          onChangeText={setBio}
+        />
 
         <Button
           title={isUploading ? "Uploading..." : "Upload Post"}

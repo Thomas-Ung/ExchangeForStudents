@@ -2,7 +2,11 @@ import OpenAI from "openai";
 
 // React Native doesn't handle process.env the same way Node.js does
 // Store API key directly for now (better to use react-native-dotenv in the future)
+<<<<<<< HEAD
 const OPENAI_API_KEY = "API Key";
+=======
+const OPENAI_API_KEY = "KEY_HERE";
+>>>>>>> origin/Thomas-AI
 
 export class CaptionGeneratorService {
   static openaiClient = new OpenAI({
@@ -28,7 +32,7 @@ export class CaptionGeneratorService {
             content: [
               {
                 type: "input_text",
-                text: "Provide a descriptive caption for this product image in approximately 30 words",
+                text: "Provide a descriptive bio for this product image in approximately 30 words",
               },
               {
                 type: "input_image",
@@ -43,7 +47,6 @@ export class CaptionGeneratorService {
       return response.output_text || "A product for sale";
     } catch (error: any) {
       console.error("Error generating caption:", error.message);
-      // Return a default caption when the API fails
       return "A product for sale";
     }
   }

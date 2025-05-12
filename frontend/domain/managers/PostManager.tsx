@@ -229,6 +229,7 @@ export class PostManager {
       description: string;
       status: string;
       photo: string;
+      bio: string; // Include bio field
     },
     specificFields: Record<string, any>
   ): Promise<string> {
@@ -249,6 +250,7 @@ export class PostManager {
         seller: commonFields.seller,
         description: commonFields.description,
         photo: commonFields.photo,
+        bio: commonFields.bio, // Save bio to Firestore
         postTime: Timestamp.now(),
         status: commonFields.status,
         requesters: [],
