@@ -2,7 +2,7 @@ import OpenAI from "openai";
 
 // React Native doesn't handle process.env the same way Node.js does
 // Store API key directly for now (better to use react-native-dotenv in the future)
-const OPENAI_API_KEY = "YOUR_API_KEY_PLACEHOLDER";
+const OPENAI_API_KEY = "API Key";
 
 export class CaptionGeneratorService {
   static openaiClient = new OpenAI({
