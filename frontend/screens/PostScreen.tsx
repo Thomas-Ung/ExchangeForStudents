@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
@@ -24,6 +25,8 @@ export default function PostScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [bio, setBio] = useState(""); // State for bio
+  const [isGenerating, setIsGenerating] = useState(false); // For generating ai response
+
 
   const handleImageSelect = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -37,18 +40,34 @@ export default function PostScreen() {
       setIsUploading(true);
 
       try {
-        // Use the new combined method
-        const { imageUrl, caption } =
-          await PostManager.uploadImageAndGenerateCaption(result.assets[0].uri);
-
+        // Upload and save the image URL
+        const imageUrl = await PostManager.uploadImage(result.assets[0].uri);
         setUploadedImageUrl(imageUrl);
-        setBio(caption); // Populate the bio field with the AI-generated caption
+        
+
       } catch (error) {
         console.error("Error:", error);
         Alert.alert("Error", "Failed to process image");
       } finally {
         setIsUploading(false);
       }
+    }
+  };
+
+  const generateCaptionManually = async () => {
+    if (!uploadedImageUrl) {
+      Alert.alert("Error", "Please upload an image first.");
+      return;
+    }
+    try {
+      setIsGenerating(true); // use separate state
+      const generated = await PostManager.generateCaption(uploadedImageUrl);
+      setBio(generated);
+    } catch (error) {
+      console.error("Error generating caption:", error);
+      Alert.alert("Error", "Failed to generate caption.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -374,11 +393,22 @@ export default function PostScreen() {
           onChangeText={setBio}
         />
 
-        <Button
-          title={isUploading ? "Uploading..." : "Upload Post"}
-          onPress={uploadPost}
-          disabled={isUploading}
-        />
+        <View style={{ marginTop: 12, marginBottom: 6 }}>
+          <Button
+            title={isGenerating ? "Generating..." : "Generate Response"}
+            onPress={generateCaptionManually}
+            disabled={!uploadedImageUrl || isGenerating}
+          />
+        </View>
+
+        <View style={{ marginTop: 6 }}>
+          <Button
+            title={isUploading ? "Uploading..." : "Upload Post"}
+            onPress={uploadPost}
+            disabled={isUploading}
+          />
+
+        </View>
       </View>
     </ScrollView>
   );
@@ -415,5 +445,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontWeight: "600",
     color: "#003366", // navy labels
+  },
+  aiButton: {
+    marginTop: 10,
+    paddingVertical: 12,
+    backgroundColor: "#0077cc", // custom blue
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10, // adds space before next button
+  },
+  aiButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  disabledButton: {
+    backgroundColor: "#cccccc",
   },
 });
