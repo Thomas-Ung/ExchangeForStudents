@@ -36,14 +36,18 @@ export default function PostScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setImageUri(uri);
       setIsUploading(true);
 
       try {
-        // Upload and save the image URL
-        const imageUrl = await PostManager.uploadImage(result.assets[0].uri);
+        // Upload the image
+        const imageUrl = await PostManager.uploadImage(uri);
         setUploadedImageUrl(imageUrl);
-        
+
+        // Auto-infer category from image
+        const inferredCategory = await PostManager.inferCategory(imageUrl);
+        setCategory(inferredCategory); // Auto-select category
 
       } catch (error) {
         console.error("Error:", error);
@@ -53,6 +57,7 @@ export default function PostScreen() {
       }
     }
   };
+
 
   const generateCaptionManually = async () => {
     if (!uploadedImageUrl) {
