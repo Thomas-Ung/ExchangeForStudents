@@ -174,7 +174,12 @@ export class PostManager {
   static async inferCategory(imageUrl: string): Promise<string> {
     return CaptionGeneratorService.inferCategory(imageUrl);
   }
-
+  /**
+ * Estimate price for a product using its image
+ */
+  static async generatePrice(imageUrl: string): Promise<string> {
+    return CaptionGeneratorService.generatePrice(imageUrl);
+  }
 
   /**
    * Upload an image and automatically generate a caption

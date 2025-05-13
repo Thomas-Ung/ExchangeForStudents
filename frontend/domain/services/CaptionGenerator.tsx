@@ -87,4 +87,46 @@ export class CaptionGeneratorService {
       return "Other"; // Default category if inference fails
     }
   }
+
+  /**
+   * Estimate a price for a product image using AI
+   * @param imageUrl URL of the product image
+   * @returns Promise containing the inferred price as a string
+   */
+  static async generatePrice(imageUrl: string): Promise<string> {
+    try {
+      console.log(
+        "Generating price for image:",
+        imageUrl.substring(0, 30) + "..."
+      );
+
+      const response = await this.openaiClient.responses.create({
+        model: "gpt-4.1-mini",
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text:
+                  "Estimate a fair market resale price in USD for this item, assuming it is used and in good condition. Only return the numeric price without a dollar sign.",
+              },
+              {
+                type: "input_image",
+                image_url: imageUrl,
+                detail: "auto",
+              },
+            ],
+          },
+        ],
+      });
+
+      const priceString = response.output_text?.trim() || "0";
+      console.log("Generated price:", priceString);
+      return priceString;
+    } catch (error: any) {
+      console.error("Error generating price:", error.message);
+      return "0";
+    }
+  }
 }

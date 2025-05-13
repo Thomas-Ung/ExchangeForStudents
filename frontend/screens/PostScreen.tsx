@@ -27,7 +27,6 @@ export default function PostScreen() {
   const [bio, setBio] = useState(""); // State for bio
   const [isGenerating, setIsGenerating] = useState(false); // For generating ai response
 
-
   const handleImageSelect = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -41,13 +40,16 @@ export default function PostScreen() {
       setIsUploading(true);
 
       try {
-        // Upload the image
         const imageUrl = await PostManager.uploadImage(uri);
         setUploadedImageUrl(imageUrl);
 
-        // Auto-infer category from image
+        // Auto-infer category
         const inferredCategory = await PostManager.inferCategory(imageUrl);
-        setCategory(inferredCategory); // Auto-select category
+        setCategory(inferredCategory);
+
+        // Auto-generate price
+        const estimatedPrice = await PostManager.generatePrice(imageUrl);
+        setPrice(estimatedPrice);
 
       } catch (error) {
         console.error("Error:", error);
@@ -57,7 +59,6 @@ export default function PostScreen() {
       }
     }
   };
-
 
   const generateCaptionManually = async () => {
     if (!uploadedImageUrl) {
