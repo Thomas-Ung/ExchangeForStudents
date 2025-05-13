@@ -8,11 +8,14 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import { auth } from "../firebaseConfig";
 import { PostManager } from "../domain/managers/PostManager";
+import { ValidationService } from "../domain/services/AIValidator";
+import { ValidationResult } from "../domain/models/Validation"; // Create this file if needed
 
 export default function PostScreen() {
   const [category, setCategory] = useState<string | null>(null);
@@ -24,6 +27,14 @@ export default function PostScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [bio, setBio] = useState(""); // State for bio
+  const [isGenerating, setIsGenerating] = useState(false); // For generating ai response
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldSuggestions, setFieldSuggestions] = useState<
+    Record<string, string[]>
+  >({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const handleImageSelect = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -33,23 +44,136 @@ export default function PostScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setImageUri(uri);
       setIsUploading(true);
 
       try {
-        // Use the updated combined method
-        const { imageUrl, caption, category } =
-          await PostManager.uploadImageAndGenerateCaption(result.assets[0].uri);
-
+        const imageUrl = await PostManager.uploadImage(uri);
         setUploadedImageUrl(imageUrl);
-        setBio(caption); // Populate the bio field with the AI-generated caption
-        setCategory(category); // Auto-select the inferred category
+
+        // Auto-infer category
+        const inferredCategory = await PostManager.inferCategory(imageUrl);
+        setCategory(inferredCategory);
+
+        // Auto-generate price
+        const estimatedPrice = await PostManager.generatePrice(imageUrl);
+        setPrice(estimatedPrice);
       } catch (error) {
         console.error("Error:", error);
         Alert.alert("Error", "Failed to process image");
       } finally {
         setIsUploading(false);
       }
+    }
+  };
+
+  /**
+   * Validates the entered fields against the uploaded image
+   */
+  const validateFieldsWithImage = async () => {
+    if (!uploadedImageUrl) {
+      Alert.alert("Error", "Please upload an image first");
+      return;
+    }
+
+    // Collect field values to validate
+    const fieldsToValidate: Record<string, string> = {};
+
+    // Add category-specific fields
+    switch (category) {
+      case "Clothing":
+        if (specificFields.color)
+          fieldsToValidate["color"] = specificFields.color;
+        if (specificFields.size) fieldsToValidate["size"] = specificFields.size;
+        break;
+      case "Furniture":
+        if (specificFields.material)
+          fieldsToValidate["material"] = specificFields.material;
+        if (specificFields.color)
+          fieldsToValidate["color"] = specificFields.color;
+        break;
+      // Add other categories as needed
+    }
+
+    // Don't validate empty fields
+    Object.keys(fieldsToValidate).forEach((key) => {
+      if (!fieldsToValidate[key]?.trim()) {
+        delete fieldsToValidate[key];
+      }
+    });
+
+    // If no fields to validate, return
+    if (Object.keys(fieldsToValidate).length === 0) {
+      return;
+    }
+
+    // Show loading indicator
+    setIsGenerating(true);
+
+    try {
+      // Validate all fields against the image
+      const results = await ValidationService.validateFormWithImage(
+        fieldsToValidate,
+        uploadedImageUrl
+      );
+
+      // Process results
+      let hasErrors = false;
+      const newErrors = { ...fieldErrors };
+      const newSuggestions = { ...fieldSuggestions };
+
+      for (const [fieldName, result] of Object.entries(results)) {
+        if (!result.valid) {
+          hasErrors = true;
+
+          // Map to the correct state field name
+          let stateFieldName = fieldName;
+          if (fieldName !== "condition") {
+            stateFieldName = `specificFields.${fieldName}`;
+          }
+
+          newErrors[stateFieldName] = result.message || `Invalid ${fieldName}`;
+          if (result.suggestions && result.suggestions.length > 0) {
+            newSuggestions[stateFieldName] = result.suggestions;
+          }
+        }
+      }
+
+      setFieldErrors(newErrors);
+      setFieldSuggestions(newSuggestions);
+
+      if (hasErrors) {
+        Alert.alert(
+          "Possible inaccuracies detected",
+          "Some of your descriptions don't seem to match the image. Please review the highlighted fields."
+        );
+      }
+    } catch (error) {
+      console.error("Error validating with image:", error);
+      Alert.alert(
+        "Validation Error",
+        "Could not validate fields against the image. Please check your inputs manually."
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateCaptionManually = async () => {
+    if (!uploadedImageUrl) {
+      Alert.alert("Error", "Please upload an image first.");
+      return;
+    }
+    try {
+      setIsGenerating(true); // use separate state
+      const generated = await PostManager.generateCaption(uploadedImageUrl);
+      setBio(generated);
+    } catch (error) {
+      console.error("Error generating caption:", error);
+      Alert.alert("Error", "Failed to generate caption.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -131,6 +255,75 @@ export default function PostScreen() {
     }
 
     return true;
+  };
+
+  const validateField = async (
+    fieldType: string,
+    value: string,
+    fieldName: string
+  ) => {
+    // Mark the field as touched
+    setTouchedFields((prev) => ({ ...prev, [fieldName]: true }));
+
+    // Only validate touched fields
+    if (!touchedFields[fieldName]) return;
+
+    const result = ValidationService.validateField(fieldType, value);
+
+    if (!result.valid) {
+      // Set the error
+      setFieldErrors((prev) => ({
+        ...prev,
+        [fieldName]: result.message || "Invalid input",
+      }));
+
+      // Get AI suggestions
+      const suggestions = await ValidationService.getSuggestions(
+        fieldType,
+        value
+      );
+      setFieldSuggestions((prev) => ({ ...prev, [fieldName]: suggestions }));
+    } else {
+      // Clear errors and suggestions
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+      setFieldSuggestions((prev) => {
+        const newSuggestions = { ...prev };
+        delete newSuggestions[fieldName];
+        return newSuggestions;
+      });
+    }
+  };
+
+  const applySuggestion = (fieldName: string, suggestion: string) => {
+    if (fieldName.includes("specificFields.")) {
+      const actualField = fieldName.split(".")[1];
+      setSpecificFields((prev) => ({
+        ...prev,
+        [actualField]: suggestion,
+      }));
+    } else {
+      // Handle regular fields
+      switch (fieldName) {
+        case "price":
+          setPrice(suggestion);
+          break;
+        case "caption":
+          setCaption(suggestion);
+          break;
+        // Add other fields as needed
+      }
+    }
+
+    // Clear suggestions after applying
+    setFieldSuggestions((prev) => {
+      const newSuggestions = { ...prev };
+      delete newSuggestions[fieldName];
+      return newSuggestions;
+    });
   };
 
   const uploadPost = async () => {
@@ -215,22 +408,103 @@ export default function PostScreen() {
       case "Clothing":
         return (
           <>
-            <TextInput
-              style={styles.input}
-              placeholder="Color"
-              value={specificFields.color || ""}
-              onChangeText={(value) =>
-                setSpecificFields({ ...specificFields, color: value })
-              }
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Size"
-              value={specificFields.size || ""}
-              onChangeText={(value) =>
-                setSpecificFields({ ...specificFields, size: value })
-              }
-            />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[
+                  styles.input,
+                  fieldErrors["specificFields.color"]
+                    ? styles.inputError
+                    : null,
+                ]}
+                placeholder="Color"
+                value={specificFields.color || ""}
+                onChangeText={(value) => {
+                  setSpecificFields({ ...specificFields, color: value });
+                  validateField("color", value, "specificFields.color");
+                }}
+                onBlur={() =>
+                  validateField(
+                    "color",
+                    specificFields.color || "",
+                    "specificFields.color"
+                  )
+                }
+              />
+              {fieldErrors["specificFields.color"] && (
+                <Text style={styles.errorText}>
+                  {fieldErrors["specificFields.color"]}
+                </Text>
+              )}
+              {fieldSuggestions["specificFields.color"] &&
+                fieldSuggestions["specificFields.color"].length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    <Text style={styles.suggestionsTitle}>Did you mean:</Text>
+                    {fieldSuggestions["specificFields.color"].map(
+                      (suggestion, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() =>
+                            applySuggestion("specificFields.color", suggestion)
+                          }
+                          style={styles.suggestionButton}
+                        >
+                          <Text style={styles.suggestionText}>
+                            {suggestion}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    )}
+                  </View>
+                )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[
+                  styles.input,
+                  fieldErrors["specificFields.size"] ? styles.inputError : null,
+                ]}
+                placeholder="Size"
+                value={specificFields.size || ""}
+                onChangeText={(value) => {
+                  setSpecificFields({ ...specificFields, size: value });
+                  validateField("size", value, "specificFields.size");
+                }}
+                onBlur={() =>
+                  validateField(
+                    "size",
+                    specificFields.size || "",
+                    "specificFields.size"
+                  )
+                }
+              />
+              {fieldErrors["specificFields.size"] && (
+                <Text style={styles.errorText}>
+                  {fieldErrors["specificFields.size"]}
+                </Text>
+              )}
+              {fieldSuggestions["specificFields.size"] &&
+                fieldSuggestions["specificFields.size"].length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    <Text style={styles.suggestionsTitle}>Did you mean:</Text>
+                    {fieldSuggestions["specificFields.size"].map(
+                      (suggestion, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() =>
+                            applySuggestion("specificFields.size", suggestion)
+                          }
+                          style={styles.suggestionButton}
+                        >
+                          <Text style={styles.suggestionText}>
+                            {suggestion}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    )}
+                  </View>
+                )}
+            </View>
           </>
         );
       case "Furniture":
@@ -375,11 +649,38 @@ export default function PostScreen() {
           onChangeText={setBio}
         />
 
-        <Button
-          title={isUploading ? "Uploading..." : "Upload Post"}
-          onPress={uploadPost}
-          disabled={isUploading}
-        />
+        {uploadedImageUrl && (
+          <View style={{ marginTop: 12, marginBottom: 6 }}>
+            <Button
+              title={isGenerating ? "Checking..." : "Verify Against Image"}
+              onPress={validateFieldsWithImage}
+              disabled={isGenerating}
+            />
+          </View>
+        )}
+
+        {/* Add loading indicator if needed */}
+        {isGenerating && (
+          <View style={styles.loadingContainer}>
+            <Text>AI is analyzing your image...</Text>
+          </View>
+        )}
+
+        <View style={{ marginTop: 12, marginBottom: 6 }}>
+          <Button
+            title={isGenerating ? "Generating..." : "Generate Response"}
+            onPress={generateCaptionManually}
+            disabled={!uploadedImageUrl || isGenerating}
+          />
+        </View>
+
+        <View style={{ marginTop: 6 }}>
+          <Button
+            title={isUploading ? "Uploading..." : "Upload Post"}
+            onPress={uploadPost}
+            disabled={isUploading}
+          />
+        </View>
       </View>
     </ScrollView>
   );
@@ -416,5 +717,65 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontWeight: "600",
     color: "#003366", // navy labels
+  },
+  aiButton: {
+    marginTop: 10,
+    paddingVertical: 12,
+    backgroundColor: "#0077cc", // custom blue
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10, // adds space before next button
+  },
+  aiButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  disabledButton: {
+    backgroundColor: "#cccccc",
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginTop: 5,
+  },
+  suggestionsContainer: {
+    marginTop: 5,
+    padding: 10,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 5,
+  },
+  suggestionsTitle: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  suggestionButton: {
+    paddingVertical: 5,
+  },
+  suggestionText: {
+    color: "blue",
+  },
+  validationButton: {
+    backgroundColor: "#4a90e2",
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    marginTop: 15,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  loadingContainer: {
+    paddingVertical: 10,
+    alignItems: "center",
   },
 });
