@@ -4,7 +4,7 @@ import OpenAI from "openai";
 // Store API key directly for now (better to use react-native-dotenv in the future)
 const OPENAI_API_KEY = "API Key"; // Replace with your actual key or use dotenv
 
-export class CaptionGeneratorService {
+export class AIGeneratorService {
   static openaiClient = new OpenAI({
     apiKey: OPENAI_API_KEY,
     dangerouslyAllowBrowser: true,

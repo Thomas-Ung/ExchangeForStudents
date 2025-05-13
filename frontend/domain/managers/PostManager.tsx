@@ -13,7 +13,7 @@ import { db } from "../../firebaseConfig";
 import { Post } from "../models/Post";
 import { createPostObject } from "../services/PostFactory";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { CaptionGeneratorService } from "../services/CaptionGenerator";
+import { AIGeneratorService } from "../services/AIGenerator";
 
 export class PostManager {
   /**
@@ -166,19 +166,19 @@ export class PostManager {
    * Generate a caption for an image URL using AI
    */
   static async generateCaption(imageUrl: string): Promise<string> {
-    return CaptionGeneratorService.generateCaption(imageUrl);
+    return AIGeneratorService.generateCaption(imageUrl);
   }
   /**
  * Infer a category for an image using AI
  */
   static async inferCategory(imageUrl: string): Promise<string> {
-    return CaptionGeneratorService.inferCategory(imageUrl);
+    return AIGeneratorService.inferCategory(imageUrl);
   }
   /**
  * Estimate price for a product using its image
  */
   static async generatePrice(imageUrl: string): Promise<string> {
-    return CaptionGeneratorService.generatePrice(imageUrl);
+    return AIGeneratorService.generatePrice(imageUrl);
   }
 
   /**
@@ -196,8 +196,8 @@ export class PostManager {
 
       // Generate caption and infer category in parallel for efficiency
       const [caption, category] = await Promise.all([
-        CaptionGeneratorService.generateCaption(imageUrl),
-        CaptionGeneratorService.inferCategory(imageUrl),
+        AIGeneratorService.generateCaption(imageUrl),
+        AIGeneratorService.inferCategory(imageUrl),
       ]);
 
       return { imageUrl, caption, category };
